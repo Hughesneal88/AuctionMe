@@ -177,23 +177,63 @@ describe('DisputeService', () => {
   });
 
   describe('getDisputes', () => {
-    beforeEach(async () => {
+    it('should get all disputes for a buyer', async () => {
+      // Create first auction and escrow
+      const auction1 = await Auction.create({
+        title: 'Test Auction 1',
+        description: 'Test Description 1',
+        startingPrice: 100,
+        currentPrice: 150,
+        sellerId: seller._id,
+        winnerId: buyer._id,
+        status: AuctionStatus.COMPLETED,
+        startDate: new Date(),
+        endDate: new Date()
+      });
+
+      const escrow1 = await Escrow.create({
+        auctionId: auction1._id,
+        buyerId: buyer._id,
+        sellerId: seller._id,
+        amount: 150,
+        status: EscrowStatus.HELD
+      });
+
+      // Create second auction and escrow
+      const auction2 = await Auction.create({
+        title: 'Test Auction 2',
+        description: 'Test Description 2',
+        startingPrice: 200,
+        currentPrice: 250,
+        sellerId: seller._id,
+        winnerId: buyer._id,
+        status: AuctionStatus.COMPLETED,
+        startDate: new Date(),
+        endDate: new Date()
+      });
+
+      const escrow2 = await Escrow.create({
+        auctionId: auction2._id,
+        buyerId: buyer._id,
+        sellerId: seller._id,
+        amount: 250,
+        status: EscrowStatus.HELD
+      });
+
       await disputeService.createDispute({
-        auctionId: auction._id,
+        auctionId: auction1._id,
         buyerId: buyer._id,
         reason: DisputeReason.ITEM_NOT_RECEIVED,
         description: 'Test dispute 1'
       });
 
       await disputeService.createDispute({
-        auctionId: auction._id,
+        auctionId: auction2._id,
         buyerId: buyer._id,
         reason: DisputeReason.DAMAGED_ITEM,
         description: 'Test dispute 2'
       });
-    });
 
-    it('should get all disputes for a buyer', async () => {
       const result = await disputeService.getDisputes({
         buyerId: buyer._id
       });

@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import adminController from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
+import { apiLimiter, adminActionLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
+
+// Apply rate limiting
+router.use(apiLimiter);
 
 // All admin routes require authentication and admin role
 router.use(authenticate);
 router.use(requireAdmin);
+router.use(adminActionLimiter);
 
 // Dispute management
 router.get('/disputes', adminController.getAllDisputes);

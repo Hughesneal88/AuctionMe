@@ -72,6 +72,8 @@ class AdminService {
       throw new Error('User is not suspended');
     }
 
+    const previousSuspensionReason = user.suspensionReason;
+
     user.status = UserStatus.ACTIVE;
     user.suspendedUntil = undefined;
     user.suspensionReason = undefined;
@@ -83,7 +85,7 @@ class AdminService {
       performedBy: unsuspendedBy,
       targetUser: user._id,
       details: {
-        previousSuspensionReason: user.suspensionReason
+        previousSuspensionReason
       }
     });
 
