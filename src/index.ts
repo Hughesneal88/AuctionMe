@@ -19,7 +19,7 @@ const startApp = async () => {
     }
 
     // Start server with WebSocket support
-    const PORT = config.port as number || process.env.PORT || 3000;
+    const PORT = (config.port as number) || (process.env.PORT ? parseInt(process.env.PORT as string) : 3000);
     startServer(PORT);
     
     console.log(`Server running on port ${PORT} in ${config.nodeEnv} mode`);
