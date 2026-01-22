@@ -19,6 +19,14 @@ An app that allows people to put up stuff for auction on campus and deliver the 
   - Notifies winner on auction close
   - Notifies losers on auction close
   - Real-time delivery via WebSocket
+- **Delivery Confirmation System** 🆕
+  - Generate unique 6-digit confirmation codes for buyers
+  - Secure code hashing with bcrypt (10 rounds)
+  - One-time use enforcement
+  - Buyer-only code access
+  - Seller delivery confirmation with buyer's code
+  - Automatic escrow release after successful confirmation
+  - Code expiration (72 hours)
 
 ## Tech Stack
 
@@ -32,20 +40,25 @@ An app that allows people to put up stuff for auction on campus and deliver the 
 
 ```
 src/
-├── models/           # Data models (User, Auction, Bid, Notification)
-├── services/         # Business logic
-│   ├── bidService.ts           # Bid placement and validation
-│   ├── notificationService.ts  # Notification management
-│   ├── auctionService.ts       # Auction lifecycle management
-│   └── webSocketService.ts     # Real-time communication
-├── controllers/      # API request handlers
-│   └── bidController.ts
-├── routes/          # API route definitions
-│   └── bidRoutes.ts
-├── utils/           # Utilities and helpers
-│   └── database.ts  # In-memory database
-├── __tests__/       # Test files
-└── app.ts           # Application setup
+├── models/              # Data models (User, Auction, Bid, Notification)
+├── services/            # Business logic
+│   ├── bidService.ts                  # Bid placement and validation
+│   ├── notificationService.ts         # Notification management
+│   ├── auctionService.ts              # Auction lifecycle management
+│   ├── confirmationCodeService.ts     # Delivery confirmation (NEW)
+│   └── webSocketService.ts            # Real-time communication
+├── controllers/         # API request handlers
+│   ├── bidController.ts
+│   └── deliveryController.ts          # Delivery confirmation (NEW)
+├── routes/             # API route definitions
+│   ├── bidRoutes.ts
+│   └── deliveryRoutes.ts              # Delivery confirmation (NEW)
+├── utils/              # Utilities and helpers
+│   └── database.ts     # In-memory database
+├── __tests__/          # Test files
+│   ├── confirmationCodeService.test.ts  # Delivery tests (NEW)
+│   └── deliveryApi.test.ts              # Delivery API tests (NEW)
+└── app.ts              # Application setup
 
 ## Installation
 
@@ -155,6 +168,80 @@ GET /api/bids/bidder/:bidderId
 ```
 
 Returns all bids placed by a specific user.
+
+### Delivery Confirmation 🆕
+
+#### Generate Confirmation Code (Buyer)
+```
+POST /api/delivery/generate
+Content-Type: application/json
+
+{
+  "transactionId": "string",
+  "buyerId": "string"
+}
+```
+
+**Response** `201`:
+```json
+{
+  "success": true,
+  "message": "Confirmation code generated successfully",
+  "data": {
+    "code": "123456",
+    "confirmationId": "uuid",
+    "expiresAt": "2026-01-25T12:00:00Z"
+  }
+}
+```
+
+**Note**: The code is only shown once when generated. Buyer provides this code to seller during delivery/pickup.
+
+#### Confirm Delivery (Seller)
+```
+POST /api/delivery/confirm
+Content-Type: application/json
+
+{
+  "transactionId": "string",
+  "code": "123456",
+  "sellerId": "string"
+}
+```
+
+**Response** `200`:
+```json
+{
+  "success": true,
+  "message": "Delivery confirmed successfully"
+}
+```
+
+Successful confirmation:
+- Marks code as used (one-time use)
+- Updates transaction status to COMPLETED
+- Automatically releases escrow funds to seller
+
+#### Get Confirmation Status (Buyer)
+```
+GET /api/delivery/status/:transactionId?buyerId=:buyerId
+```
+
+**Response** `200`:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "transactionId": "string",
+    "buyerId": "string",
+    "generatedAt": "2026-01-22T12:00:00Z",
+    "expiresAt": "2026-01-25T12:00:00Z",
+    "usedAt": null,
+    "isUsed": false
+  }
+}
+```
 
 ## WebSocket Events
 

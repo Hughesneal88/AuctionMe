@@ -6,6 +6,7 @@ import routes from './routes';
 import bidRoutes from './routes/bidRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import escrowRoutes from './routes/escrowRoutes';
+import deliveryRoutes from './routes/deliveryRoutes';
 import { wsService } from './services/webSocketService';
 
 export function createApp(): Application {
@@ -25,6 +26,9 @@ export function createApp(): Application {
   // Routes - Payment & Escrow system
   app.use('/api/payments', paymentRoutes);
   app.use('/api/escrow', escrowRoutes);
+
+  // Routes - Delivery confirmation system
+  app.use('/api/delivery', deliveryRoutes);
 
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
