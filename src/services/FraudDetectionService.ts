@@ -73,7 +73,7 @@ export class FraudDetectionService {
     }
 
     // Check for bid pattern anomalies
-    if (this.detectBidPatternAnomaly(userId, auctionId, bidAmount)) {
+    if (this.detectBidPatternAnomaly(userId, auctionId)) {
       flags.push('PATTERN_ANOMALY');
       riskScore += 40;
     }
@@ -134,7 +134,7 @@ export class FraudDetectionService {
   /**
    * Detect bid pattern anomalies
    */
-  private detectBidPatternAnomaly(userId: string, auctionId: string, bidAmount: number): boolean {
+  private detectBidPatternAnomaly(userId: string, auctionId: string): boolean {
     const history = this.userBidHistory.get(userId) || [];
     
     if (history.length < 3) {

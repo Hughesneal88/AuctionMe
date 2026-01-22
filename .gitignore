@@ -8,3 +8,4 @@ coverage/
 *.swo
 .vscode/
 .idea/
+package-lock.json

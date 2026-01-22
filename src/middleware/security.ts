@@ -50,13 +50,14 @@ export async function fraudDetectionMiddleware(req: Request, res: Response, next
 /**
  * Middleware for validating bids
  */
-export async function bidValidationMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function bidValidationMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = (req as any).user?.id;
     const { auctionId, amount } = req.body;
 
     if (!userId || !auctionId || typeof amount !== 'number') {
-      return res.status(400).json({ error: 'Missing required fields' });
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
     }
 
     // Get current highest bid (would normally come from database)
@@ -85,12 +86,13 @@ export async function bidValidationMiddleware(req: Request, res: Response, next:
         req.get('user-agent')
       );
 
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Bid validation failed',
         message: validation.reason,
         riskScore: validation.riskScore,
         flags: validation.flags,
       });
+      return;
     }
 
     // Attach validation result to request for use in controller
@@ -98,7 +100,7 @@ export async function bidValidationMiddleware(req: Request, res: Response, next:
     next();
   } catch (error) {
     console.error('Bid validation middleware error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 

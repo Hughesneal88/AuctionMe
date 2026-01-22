@@ -12,12 +12,13 @@ export class RateLimiter {
    * Create a rate limit middleware
    */
   static create(action: string, config: RateLimitConfig) {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       // Extract user ID from request (assumes auth middleware sets req.user)
       const userId = (req as any).user?.id || req.ip;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       // Check rate limit
@@ -42,11 +43,12 @@ export class RateLimiter {
           await notificationService.notifyRateLimitWarning(userId, action);
         }
 
-        return res.status(429).json({
+        res.status(429).json({
           error: 'Too many requests',
           message: config.message,
           retryAfter: Math.ceil((record.windowEnd.getTime() - Date.now()) / 1000),
         });
+        return;
       }
 
       // Warn user when approaching limit (at 80%)

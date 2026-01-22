@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Notification, NotificationType, NotificationStatus } from '../types';
+import { Notification, NotificationStatus } from '../types';
 
 /**
  * In-memory storage for notifications (replace with database in production)

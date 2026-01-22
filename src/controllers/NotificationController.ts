@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { notificationService } from '../services/NotificationService';
-import { NotificationStatus } from '../types';
 
 /**
  * Controller for notification endpoints
