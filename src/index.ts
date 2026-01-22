@@ -1,31 +1,32 @@
-import express, { Express, Request, Response } from 'express';
-import deliveryRoutes from './routes/deliveryRoutes';
+import { startServer } from './app';
+import { seedDatabase } from './seed';
+import { config } from './config';
+import { connectDatabase } from './config/database';
 
-const app: Express = express();
-const PORT = process.env.PORT || 3000;
+const startApp = async () => {
+  try {
+    // Connect to MongoDB for authentication and payment systems
+    await connectDatabase();
+    console.log('MongoDB connected successfully');
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+    // Seed database with sample data in development
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        await seedDatabase();
+      } catch (error) {
+        console.log('Seeding skipped or failed:', error);
+      }
+    }
 
-// Routes
-app.use('/api/delivery', deliveryRoutes);
+    // Start server with WebSocket support
+    const PORT = (config.port as number) || (process.env.PORT ? parseInt(process.env.PORT as string) : 3000);
+    startServer(PORT);
+    
+    console.log(`Server running on port ${PORT} in ${config.nodeEnv} mode`);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-// Health check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
-
-// Start server only if not in test environment
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`AuctionMe server running on port ${PORT}`);
-  });
-}
-
-export default app;
+startApp();
