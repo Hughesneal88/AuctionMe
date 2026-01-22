@@ -101,10 +101,10 @@ export class DeliveryController {
    */
   static async getConfirmationStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { transactionId } = req.params;
-      const { buyerId } = req.query;
+      const transactionId = req.params.transactionId as string;
+      const buyerId = req.query.buyerId;
 
-      if (!transactionId || !buyerId) {
+      if (!transactionId || !buyerId || typeof buyerId !== 'string') {
         res.status(400).json({
           success: false,
           message: 'transactionId and buyerId are required',
@@ -114,7 +114,7 @@ export class DeliveryController {
 
       const confirmation = ConfirmationCodeService.getConfirmationDetails(
         transactionId,
-        buyerId as string
+        buyerId
       );
 
       if (!confirmation) {
