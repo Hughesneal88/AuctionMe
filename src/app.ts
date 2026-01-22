@@ -4,6 +4,8 @@ import http from 'http';
 import { config } from './config';
 import routes from './routes';
 import bidRoutes from './routes/bidRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import escrowRoutes from './routes/escrowRoutes';
 import { wsService } from './services/webSocketService';
 
 export function createApp(): Application {
@@ -19,6 +21,10 @@ export function createApp(): Application {
   
   // Routes - Bidding system
   app.use('/api/bids', bidRoutes);
+
+  // Routes - Payment & Escrow system
+  app.use('/api/payments', paymentRoutes);
+  app.use('/api/escrow', escrowRoutes);
 
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
