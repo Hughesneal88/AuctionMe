@@ -21,24 +21,29 @@ export class AuctionService {
     // Update auction status
     db.updateAuction(auctionId, { status: AuctionStatus.CLOSED });
 
-    // Get all bids for this auction
-    const bids = await bidService.getBidsForAuction(auctionId);
+    // Get winning bid (highest bid by amount)
+    const winningBid = await bidService.getHighestBid(auctionId);
     
-    if (bids.length === 0) {
+    if (!winningBid) {
       // No bids placed
       wsService.broadcastAuctionClosed(auctionId);
       return;
     }
 
-    // Get winner (highest bid)
-    const winningBid = bids[0];
     const winnerId = winningBid.bidderId;
 
     // Notify winner
     await notificationService.notifyWinner(winnerId, auctionId, winningBid.amount);
     
+    // Get all bids to find unique losers
+    const allBids = await bidService.getBidsForAuction(auctionId);
+    
     // Get unique losers (all bidders except winner)
-    const loserIds = [...new Set(bids.slice(1).map(bid => bid.bidderId))];
+    const loserIds = [...new Set(
+      allBids
+        .filter(bid => bid.bidderId !== winnerId)
+        .map(bid => bid.bidderId)
+    )];
     
     // Notify losers
     if (loserIds.length > 0) {

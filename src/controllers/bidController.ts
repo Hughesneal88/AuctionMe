@@ -14,7 +14,7 @@ export class BidController {
       const { auctionId, bidderId, amount } = req.body;
 
       // Validate input
-      if (!auctionId || !bidderId || !amount) {
+      if (!auctionId || !bidderId || amount === undefined || amount === null) {
         res.status(400).json({ error: 'Missing required fields: auctionId, bidderId, amount' });
         return;
       }
@@ -40,9 +40,9 @@ export class BidController {
         wsService.sendNotificationToUser(currentHighestBidder, notification);
       }
 
-      // Notify auction owner of new bid
+      // Notify auction owner of new bid (only after successful bid placement)
       const auction = db.getAuctionById(auctionId);
-      if (auction) {
+      if (auction && auction.sellerId !== bidderId) {
         const ownerNotification = await notificationService.notifyBidPlaced(
           auction.sellerId,
           auctionId,
