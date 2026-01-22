@@ -13,7 +13,7 @@ export class AuthService {
   /**
    * Register a new user with campus email validation
    */
-  async register(email: string, password: string, name: string): Promise<{ user: IUser; message: string }> {
+  async register(email: string, password: string, name: string): Promise<{ user: IUser; message: string; emailSent: boolean }> {
     // Validate campus email domain
     if (!validateCampusEmail(email)) {
       throw new Error('Please use a valid campus email address');
@@ -40,16 +40,21 @@ export class AuthService {
     });
 
     // Send verification email
+    let emailSent = false;
     try {
       await sendVerificationEmail(email, verificationToken);
+      emailSent = true;
     } catch (error) {
       console.error('Error sending verification email:', error);
-      // Don't fail registration if email fails
+      // Don't fail registration if email fails, but inform the user
     }
 
     return {
       user,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: emailSent 
+        ? 'Registration successful. Please check your email to verify your account.'
+        : 'Registration successful. However, we could not send the verification email. Please use the resend option.',
+      emailSent,
     };
   }
 

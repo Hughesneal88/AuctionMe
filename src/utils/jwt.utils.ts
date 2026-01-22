@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config';
 
@@ -27,8 +28,10 @@ export const verifyRefreshToken = (token: string): JwtPayload => {
 };
 
 export const generateVerificationToken = (): string => {
+  // Use cryptographically secure random token
+  const randomToken = crypto.randomBytes(32).toString('hex');
   return jwt.sign(
-    { random: Math.random() },
+    { token: randomToken },
     config.jwt.secret,
     { expiresIn: '24h' } as SignOptions
   );

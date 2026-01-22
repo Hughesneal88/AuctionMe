@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import authService from '../services/auth.service';
+import userService from '../services/user.service';
 import { sanitizeUser } from '../utils/validation.utils';
 
 export class AuthController {
@@ -26,6 +27,7 @@ export class AuthController {
       res.status(201).json({
         message: result.message,
         user: sanitizeUser(result.user),
+        emailSent: result.emailSent,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -160,9 +162,7 @@ export class AuthController {
         return;
       }
 
-      // Import userService dynamically to avoid circular dependency
-      const userServiceModule = await import('../services/user.service');
-      const user = await userServiceModule.default.getProfile(userId);
+      const user = await userService.getProfile(userId);
       
       res.status(200).json({ user: sanitizeUser(user) });
     } catch (error: any) {
