@@ -126,17 +126,15 @@
 
 ## Current Vulnerabilities (Non-Blocking)
 
-### Known Dependency Alerts
-1. **nodemailer** (moderate severity)
-   - Status: **ACCEPTABLE** - Email service is optional
-   - Mitigation: Only used if explicitly configured
-   - Recommendation: Update to nodemailer 7.0.12+ in production
+### Production Dependencies
+✅ **ALL CLEAR** - No vulnerabilities in production dependencies
 
-2. **tar/bcrypt** (high severity)
+### Development Dependencies Only
+1. **tar/bcrypt** (high severity)
    - Status: **ACCEPTABLE** - Dev dependencies only
-   - These are transitive dependencies of bcrypt (dev dependency)
-   - Not exposed in production build
-   - Recommendation: Update bcrypt to latest version
+   - These are transitive dependencies of bcrypt build tooling
+   - Not exposed in production runtime
+   - Recommendation: Monitor for bcrypt updates that address this
 
 ### Architecture Considerations
 1. **In-Memory Storage**
