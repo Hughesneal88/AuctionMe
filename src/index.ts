@@ -1,21 +1,28 @@
-import app from './app';
+import { startServer } from './app';
+import { seedDatabase } from './seed';
 import { config } from './config';
 import { connectDatabase } from './config/database';
 
-const startServer = async () => {
+const startApp = async () => {
   try {
-    // Connect to database
+    // Connect to MongoDB for authentication
     await connectDatabase();
+    console.log('MongoDB connected successfully');
 
-    // Start server
-    app.listen(config.port, () => {
-      console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
-      console.log(`Health check available at: http://localhost:${config.port}/health`);
-    });
+    // Seed database with sample data in development
+    if (process.env.NODE_ENV !== 'production') {
+      seedDatabase();
+    }
+
+    // Start server with WebSocket support
+    const PORT = config.port as number;
+    startServer(PORT);
+    
+    console.log(`Server running on port ${PORT} in ${config.nodeEnv} mode`);
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
-startServer();
+startApp();
