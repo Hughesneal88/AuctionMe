@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { handlePaymentWebhook } from '../controllers/webhookController';
+import { webhookLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -8,6 +9,6 @@ const router = Router();
  * @desc    Handle payment webhook from payment provider
  * @access  Public (with signature verification)
  */
-router.post('/payment', handlePaymentWebhook);
+router.post('/payment', webhookLimiter, handlePaymentWebhook);
 
 export default router;

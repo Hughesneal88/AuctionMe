@@ -82,6 +82,18 @@ export class TransactionModel {
   }
 
   /**
+   * Find transaction by provider transaction ID
+   */
+  static async findByProviderTransactionId(providerTransactionId: string): Promise<Transaction | null> {
+    const query = `
+      SELECT * FROM transactions 
+      WHERE provider_transaction_id = $1
+    `;
+    const result = await pool.query(query, [providerTransactionId]);
+    return result.rows[0] || null;
+  }
+
+  /**
    * Get transactions by user ID
    */
   static async findByUserId(userId: number, limit = 50): Promise<Transaction[]> {

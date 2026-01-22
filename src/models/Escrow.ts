@@ -79,12 +79,10 @@ export class EscrowModel {
    * Update escrow status
    */
   static async updateStatus(id: number, status: EscrowStatus): Promise<Escrow> {
-    const releasedAt = status === 'released' ? 'CURRENT_TIMESTAMP' : 'released_at';
-    
     const query = `
       UPDATE escrow 
       SET status = $1, 
-          released_at = ${releasedAt},
+          released_at = CASE WHEN $1 = 'released' THEN CURRENT_TIMESTAMP ELSE released_at END,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
       RETURNING *

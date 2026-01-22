@@ -57,11 +57,15 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
               await escrowService.getEscrowByAuction(transaction.auction_id);
             } catch {
               // Create escrow if it doesn't exist
+              // TODO: Fetch auction details from database to get actual seller_id
+              // This is a temporary mock value - in production, query the auctions table
+              const mockSellerId = 1;
+              
               await escrowService.createEscrow({
                 transaction_id: transaction.id,
                 auction_id: transaction.auction_id,
                 buyer_id: transaction.user_id,
-                seller_id: 1, // Mock - should come from auction
+                seller_id: mockSellerId,
                 amount: transaction.amount,
               });
             }

@@ -112,13 +112,15 @@ export const verifyPayment = async (req: Request, res: Response) => {
         await escrowService.getEscrowByAuction(transaction.auction_id);
       } catch {
         // Create escrow if it doesn't exist
-        // Note: In production, fetch auction details to get buyer and seller IDs
-        // For now, using mock data
+        // TODO: Fetch auction details from database to get actual seller_id
+        // This is a temporary mock value - in production, query the auctions table
+        const mockSellerId = 1;
+        
         await escrowService.createEscrow({
           transaction_id: transaction.id,
           auction_id: transaction.auction_id,
           buyer_id: transaction.user_id,
-          seller_id: 1, // Mock seller ID - should come from auction
+          seller_id: mockSellerId,
           amount: transaction.amount,
         });
       }

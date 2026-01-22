@@ -129,8 +129,7 @@ export class TransactionService {
     metadata?: Record<string, any>
   ): Promise<Transaction> {
     // Find transaction by provider transaction ID
-    const transactions = await TransactionModel.findByUserId(0); // This is inefficient, improve in production
-    const transaction = transactions.find(t => t.provider_transaction_id === providerTransactionId);
+    const transaction = await TransactionModel.findByProviderTransactionId(providerTransactionId);
 
     if (!transaction) {
       throw new Error('Transaction not found');
