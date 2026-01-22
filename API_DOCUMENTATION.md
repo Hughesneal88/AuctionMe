@@ -121,6 +121,11 @@ npm run test:coverage
 - ✅ Timing-safe code comparison
 - ✅ Transaction state validation
 - ✅ Input validation and sanitization
+- ✅ Rate limiting on all endpoints
+  - Payment initiation: 10 requests per 15 minutes
+  - Webhooks: 60 requests per minute
+  - General endpoints: 100 requests per 15 minutes
+  - Sensitive operations (delivery confirmation, fund release): 5 requests per hour
 
 ## API Usage Examples
 

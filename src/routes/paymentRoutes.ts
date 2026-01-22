@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import paymentController from '../controllers/paymentController';
+import { paymentRateLimiter, webhookRateLimiter, generalRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -7,18 +8,18 @@ const router = Router();
  * POST /api/payments/initiate
  * Initiate a new payment
  */
-router.post('/initiate', (req, res) => paymentController.initiatePayment(req, res));
+router.post('/initiate', paymentRateLimiter, (req, res) => paymentController.initiatePayment(req, res));
 
 /**
  * POST /api/payments/webhook
  * Handle payment provider webhooks
  */
-router.post('/webhook', (req, res) => paymentController.handleWebhook(req, res));
+router.post('/webhook', webhookRateLimiter, (req, res) => paymentController.handleWebhook(req, res));
 
 /**
  * GET /api/payments/:transactionId
  * Get transaction status
  */
-router.get('/:transactionId', (req, res) => paymentController.getTransactionStatus(req, res));
+router.get('/:transactionId', generalRateLimiter, (req, res) => paymentController.getTransactionStatus(req, res));
 
 export default router;
