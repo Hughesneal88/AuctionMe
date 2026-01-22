@@ -19,15 +19,11 @@ export class DeliveryCodeService {
     const deliveryCode = deliveryCodeStore.create(auctionId, buyerId, sellerId, expiresInHours);
 
     // Log code generation
-    await auditService.log(
-      'DELIVERY_CODE_VERIFIED' as any, // Using this as proxy for generation
-      'deliveryCode',
+    await auditService.logDeliveryCodeGenerated(
       deliveryCode.id,
-      { auctionId, buyerId, sellerId, expiresInHours },
-      undefined,
-      undefined,
-      undefined,
-      'MEDIUM'
+      auctionId,
+      buyerId,
+      sellerId
     );
 
     // Notify buyer with the code

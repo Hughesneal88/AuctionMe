@@ -75,6 +75,29 @@ export class AuditService {
   }
 
   /**
+   * Log delivery code generation
+   */
+  async logDeliveryCodeGenerated(
+    deliveryCodeId: string,
+    auctionId: string,
+    buyerId: string,
+    sellerId: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<AuditLog> {
+    return this.log(
+      AuditAction.DELIVERY_CODE_GENERATED,
+      'deliveryCode',
+      deliveryCodeId,
+      { auctionId, buyerId, sellerId },
+      undefined,
+      ipAddress,
+      userAgent,
+      'MEDIUM'
+    );
+  }
+
+  /**
    * Log delivery code verification
    */
   async logDeliveryCodeVerified(

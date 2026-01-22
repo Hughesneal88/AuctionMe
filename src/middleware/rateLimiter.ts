@@ -90,9 +90,10 @@ export class RateLimiter {
 
 /**
  * Cleanup middleware - runs periodically to clean up expired rate limits
+ * Returns the interval ID so it can be cleared when needed
  */
-export function cleanupRateLimits() {
-  setInterval(() => {
+export function cleanupRateLimits(): NodeJS.Timeout {
+  return setInterval(() => {
     rateLimitStore.cleanup();
   }, 60 * 1000); // Every minute
 }

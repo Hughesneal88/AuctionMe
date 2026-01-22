@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { auditService } from '../services/AuditService';
 import { fraudDetectionService } from '../services/FraudDetectionService';
+import { AuditAction } from '../types';
 
 /**
  * Middleware to detect and prevent fraudulent activity
@@ -120,7 +121,7 @@ export function auditLogMiddleware(req: Request, res: Response, next: NextFuncti
       const severity = res.statusCode >= 500 ? 'HIGH' : res.statusCode >= 400 ? 'MEDIUM' : 'LOW';
       
       await auditService.log(
-        'SUSPICIOUS_ACTIVITY' as any, // Generic action for request logging
+        AuditAction.API_REQUEST,
         'api',
         req.path,
         {

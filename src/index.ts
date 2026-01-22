@@ -56,7 +56,12 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Start cleanup tasks
-cleanupRateLimits();
+const cleanupInterval = cleanupRateLimits();
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  clearInterval(cleanupInterval);
+});
 
 // Start server
 if (require.main === module) {
