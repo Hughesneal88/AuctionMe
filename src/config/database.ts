@@ -3,7 +3,8 @@ import { config } from './index';
 
 export const connectDatabase = async (): Promise<void> => {
   try {
-    await mongoose.connect(config.mongodb.uri);
+    const mongoURI = config?.mongodb?.uri || process.env.MONGODB_URI || 'mongodb://localhost:27017/auctionme';
+    await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -18,3 +19,7 @@ mongoose.connection.on('disconnected', () => {
 mongoose.connection.on('error', (error) => {
   console.error('MongoDB error:', error);
 });
+
+// Backward compatibility export
+export const connectDB = connectDatabase;
+export default connectDatabase;

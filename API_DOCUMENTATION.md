@@ -1,90 +1,69 @@
-# AuctionMe API Documentation
+# AuctionMe - Complete API Documentation
 
-An app that allows people to put up stuff for auction on campus and deliver the items to the user.
+A comprehensive campus auction platform with real-time bidding, secure payments, and escrow system. The money stays in escrow until the seller confirms delivery with the buyer's code.
 
-The money stays in escrow until the seller confirms delivery with the buyers code.
+## Overview
 
-The code is given on delivery or during pickup.
+AuctionMe is a full-featured auction system that includes:
+- **Auction Management**: Create, browse, and manage auctions
+- **Real-Time Bidding**: Place and track bids with WebSocket updates
+- **User Authentication**: Secure registration and verification
+- **Payment & Escrow**: Integrated Mobile Money payments with escrow protection
+- **Delivery Confirmation**: Code-based delivery verification system
 
 ## Features
 
-### Implemented Features
-
-✅ **Auction Listings**
+### ✅ Auction Listings & Management
 - Create auction listings with title, description, images, starting bid, and duration
 - Automatic calculation of end time based on duration
 - Track auction status (active, closed, expired)
+- Edit prevention after first bid is placed
+- Automatic closure of expired auctions via scheduler
 
-✅ **Edit Prevention**
-- Auctions cannot be edited after the first bid is placed
-- Ensures integrity of ongoing auctions
-
-✅ **Browse & Search**
+### ✅ Browse & Search
 - Pagination support for efficient browsing
 - Search by title and description
 - Filter by bid range (min/max)
 - Filter by seller
 - Automatically hides expired auctions
 
-✅ **Bidding System**
+### ✅ Bidding System
 - Place bids on active auctions
+- Real-time bid updates via WebSocket
 - Validates bid amount (must be higher than current bid)
 - Prevents seller from bidding on own auction
 - Tracks bid history with timestamps
-
-✅ **Auction Scheduler**
-- Automatic closure of expired auctions
-- Runs every minute to check for expired auctions
 - Determines winning bid automatically (highest bid, earliest timestamp for ties)
-- Updates auction status and sets winner
+
+### ✅ User Authentication & Authorization
+- User registration with campus email domain validation
+- Email verification flow
+- JWT-based authentication (login/logout)
+- Refresh token support
+- Block unverified users from protected features
+- User profile management (name, phone, campus location)
+- Authorization middleware for protected routes
+
+### ✅ Payment & Escrow System
+- 🔒 Secure escrow: Buyer payments locked until delivery confirmation
+- 💳 Mobile Money integration: Seamless payment processing
+- 📝 Transaction management: Complete lifecycle tracking
+- 🔐 Delivery verification: Code-based confirmation
+- 🚫 Withdrawal protection: Prevents fund withdrawals before delivery
+- 📊 Balance tracking: Real-time seller balance and escrow status
 
 ## Installation
 
 ### Prerequisites
 - Node.js (v14 or higher)
 - MongoDB (v4 or higher)
+- Mobile Money API credentials (for payments)
 
 ### Setup
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/Hughesneal88/AuctionMe.git
-An app that allows people to put up stuff for auction on campus and deliver the items to the user. The money stays in escrow until the seller confirms delivery with the buyer's code.
-
-## Features
-
-### User Authentication & Authorization
-- ✅ User registration with campus email domain validation
-- ✅ Email verification flow
-- ✅ JWT-based authentication (login/logout)
-- ✅ Refresh token support
-- ✅ Block unverified users from protected features
-- ✅ User profile management (name, phone, campus location)
-- ✅ Authorization middleware for protected routes
-
-## Tech Stack
-
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Password Hashing**: bcryptjs
-- **Email**: Nodemailer
-- **Testing**: Jest + Supertest
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- MongoDB (local or cloud instance)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
 cd AuctionMe
 ```
 
@@ -93,7 +72,7 @@ cd AuctionMe
 npm install
 ```
 
-3. Create a `.env` file in the root directory (copy from `.env.example`):
+3. Create a `.env` file based on `.env.example`:
 ```bash
 cp .env.example .env
 ```
@@ -103,6 +82,16 @@ cp .env.example .env
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/auctionme
 NODE_ENV=development
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret
+MOBILE_MONEY_API_KEY=your-api-key
+MOBILE_MONEY_API_SECRET=your-api-secret
+MOBILE_MONEY_WEBHOOK_SECRET=your-webhook-secret
+MOBILE_MONEY_BASE_URL=https://api.mobilemoney.com/v1
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-password
 ```
 
 5. Start MongoDB (if not already running):
@@ -140,9 +129,11 @@ Check if the API is running.
 }
 ```
 
-### Auctions
+---
 
-#### Create Auction
+## Auction Endpoints
+
+### Create Auction
 
 **POST** `/api/auctions`
 
@@ -167,23 +158,14 @@ Create a new auction listing.
   "data": {
     "_id": "auction_id",
     "title": "Used Laptop",
-    "description": "MacBook Pro 2020, 16GB RAM, 512GB SSD",
-    "images": ["url1.jpg", "url2.jpg"],
-    "startingBid": 500,
     "currentBid": 500,
-    "duration": 24,
-    "startTime": "2024-01-01T00:00:00.000Z",
-    "endTime": "2024-01-02T00:00:00.000Z",
     "status": "active",
-    "sellerId": "user_id_here",
-    "bidCount": 0,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "endTime": "2024-01-02T00:00:00.000Z"
   }
 }
 ```
 
-#### Browse Auctions
+### Browse Auctions
 
 **GET** `/api/auctions`
 
@@ -199,63 +181,16 @@ Browse and search auctions with pagination and filters.
 
 **Example:**
 ```
-GET /api/auctions?page=1&limit=10&search=laptop&minBid=100&maxBid=1000
+GET /api/auctions?page=1&limit=10&search=laptop&minBid=100
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "auction_id",
-      "title": "Used Laptop",
-      "currentBid": 500,
-      "status": "active",
-      "endTime": "2024-01-02T00:00:00.000Z",
-      "sellerId": {
-        "_id": "user_id",
-        "username": "johndoe",
-        "email": "john@example.com"
-      }
-    }
-  ],
-  "pagination": {
-    "total": 25,
-    "page": 1,
-    "limit": 10,
-    "pages": 3
-  }
-}
-```
-
-#### Get Auction by ID
+### Get Auction by ID
 
 **GET** `/api/auctions/:id`
 
 Get detailed information about a specific auction.
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "auction_id",
-    "title": "Used Laptop",
-    "description": "MacBook Pro 2020",
-    "currentBid": 500,
-    "bidCount": 5,
-    "status": "active",
-    "sellerId": {
-      "_id": "user_id",
-      "username": "johndoe"
-    },
-    "winnerId": null
-  }
-}
-```
-
-#### Update Auction
+### Update Auction
 
 **PUT** `/api/auctions/:id`
 
@@ -270,18 +205,6 @@ Update auction details. Can only be done before the first bid.
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "auction_id",
-    "title": "Updated Title",
-    "description": "Updated description"
-  }
-}
-```
-
 **Error (after first bid):**
 ```json
 {
@@ -290,29 +213,17 @@ Update auction details. Can only be done before the first bid.
 }
 ```
 
-#### Close Auction
+### Close Auction
 
 **POST** `/api/auctions/:id/close`
 
-Manually close an auction and determine the winner. (Usually done automatically by scheduler)
+Manually close an auction and determine the winner.
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "auction_id",
-    "status": "closed",
-    "winnerId": "winner_user_id",
-    "currentBid": 750
-  },
-  "message": "Auction closed successfully"
-}
-```
+---
 
-### Bids
+## Bidding Endpoints
 
-#### Place Bid
+### Place Bid
 
 **POST** `/api/auctions/:id/bids`
 
@@ -333,7 +244,6 @@ Place a bid on an auction.
   "data": {
     "_id": "bid_id",
     "auctionId": "auction_id",
-    "bidderId": "user_id",
     "amount": 550,
     "timestamp": "2024-01-01T00:00:00.000Z"
   },
@@ -341,104 +251,270 @@ Place a bid on an auction.
 }
 ```
 
-**Error (bid too low):**
-```json
-{
-  "success": false,
-  "message": "Bid must be higher than current bid of 500"
-}
-```
-
-#### Get Auction Bids
+### Get Auction Bids
 
 **GET** `/api/auctions/:id/bids`
 
-Get all bids for a specific auction.
+Get all bids for a specific auction with pagination.
 
 **Query Parameters:**
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "bid_id",
-      "amount": 750,
-      "timestamp": "2024-01-01T02:00:00.000Z",
-      "bidderId": {
-        "_id": "user_id",
-        "username": "janedoe"
-      }
-    }
-  ],
-  "pagination": {
-    "total": 10,
-    "page": 1,
-    "limit": 20,
-    "pages": 1
-  }
-}
-```
-
-#### Get Highest Bid
+### Get Highest Bid
 
 **GET** `/api/auctions/:id/bids/highest`
 
 Get the highest bid for an auction.
+
+### Get User Bids
+
+**GET** `/api/users/:userId/bids`
+
+Get all bids placed by a specific user.
+
+---
+
+## User Authentication Endpoints
+
+### Register
+
+**POST** `/api/auth/register`
+
+Register a new user with campus email.
+
+**Request Body:**
+```json
+{
+  "email": "student@university.edu",
+  "password": "SecurePass123!",
+  "name": "John Doe"
+}
+```
+
+### Verify Email
+
+**POST** `/api/auth/verify-email`
+
+Verify user email with verification code.
+
+**Request Body:**
+```json
+{
+  "email": "student@university.edu",
+  "code": "123456"
+}
+```
+
+### Login
+
+**POST** `/api/auth/login`
+
+Authenticate user and receive JWT tokens.
+
+**Request Body:**
+```json
+{
+  "email": "student@university.edu",
+  "password": "SecurePass123!"
+}
+```
 
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "_id": "bid_id",
-    "amount": 750,
-    "timestamp": "2024-01-01T02:00:00.000Z",
-    "bidderId": {
+    "accessToken": "jwt_access_token",
+    "refreshToken": "jwt_refresh_token",
+    "user": {
       "_id": "user_id",
-      "username": "janedoe"
+      "email": "student@university.edu",
+      "name": "John Doe"
     }
   }
 }
 ```
 
-#### Get User Bids
+### Logout
 
-**GET** `/api/users/:userId/bids`
+**POST** `/api/auth/logout`
 
-Get all bids placed by a specific user.
+Logout user and invalidate refresh token.
 
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 20)
+### Refresh Token
+
+**POST** `/api/auth/refresh`
+
+Get new access token using refresh token.
+
+### Get Profile
+
+**GET** `/api/users/profile`
+
+Get current user profile (requires authentication).
+
+### Update Profile
+
+**PUT** `/api/users/profile`
+
+Update user profile information.
+
+---
+
+## Payment Endpoints
+
+### Initiate Payment
+
+**POST** `/api/payments/initiate`
+
+Initiate a new payment for an auction.
+
+**Request Body:**
+```json
+{
+  "auctionId": "auction_id",
+  "amount": 1000,
+  "phoneNumber": "+256700000000"
+}
+```
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "_id": "bid_id",
-      "amount": 750,
-      "timestamp": "2024-01-01T02:00:00.000Z",
-      "auctionId": {
-        "_id": "auction_id",
-        "title": "Used Laptop",
-        "status": "active"
-      }
-    }
-  ],
-  "pagination": {
-    "total": 5,
-    "page": 1,
-    "limit": 20,
-    "pages": 1
+  "data": {
+    "transactionId": "txn_id",
+    "status": "PENDING",
+    "message": "Payment initiated. Please complete on your phone."
   }
 }
 ```
+
+### Payment Webhook
+
+**POST** `/api/payments/webhook`
+
+Handle payment provider callbacks (internal use).
+
+### Get Transaction Status
+
+**GET** `/api/payments/:transactionId`
+
+Get the status of a payment transaction.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "transactionId": "txn_id",
+    "status": "COMPLETED",
+    "amount": 1000,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+## Escrow Endpoints
+
+### Get Escrow Status
+
+**GET** `/api/escrow/:escrowId/status`
+
+Get current escrow status.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "escrowId": "escrow_id",
+    "status": "HELD",
+    "amount": 1000,
+    "deliveryCode": "ABCD1234"
+  }
+}
+```
+
+### Get Escrow by Transaction
+
+**GET** `/api/escrow/transaction/:transactionId`
+
+Get escrow details by transaction ID.
+
+### Confirm Delivery
+
+**POST** `/api/escrow/:escrowId/confirm-delivery`
+
+Confirm delivery with verification code.
+
+**Request Body:**
+```json
+{
+  "deliveryCode": "ABCD1234",
+  "buyerId": "buyer_id"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Delivery confirmed. Funds released to seller.",
+  "data": {
+    "escrowId": "escrow_id",
+    "status": "RELEASED"
+  }
+}
+```
+
+### Release Funds
+
+**POST** `/api/escrow/:escrowId/release`
+
+Release funds to seller after delivery confirmation.
+
+### Process Refund
+
+**POST** `/api/escrow/:escrowId/refund`
+
+Process refund to buyer.
+
+**Request Body:**
+```json
+{
+  "reason": "Item not delivered"
+}
+```
+
+### Check Withdrawal Eligibility
+
+**GET** `/api/escrow/seller/:sellerId/can-withdraw`
+
+Check if seller can withdraw funds.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "canWithdraw": true,
+    "availableBalance": 5000,
+    "pendingDeliveries": 0
+  }
+}
+```
+
+### Get Available Balance
+
+**GET** `/api/escrow/seller/:sellerId/balance`
+
+Get seller's available balance.
+
+---
 
 ## Automatic Auction Closure
 
@@ -454,11 +530,57 @@ The system includes an automated scheduler that:
 
 ### Winning Bid Logic
 
-The winning bid is determined by:
 ```javascript
 // Highest bid first, earliest timestamp for ties
-sort({ amount: -1, timestamp: 1 })
+Bid.findOne({ auctionId })
+  .sort({ amount: -1, timestamp: 1 })
+  .limit(1)
 ```
+
+---
+
+## Real-Time Updates (WebSocket)
+
+The system supports real-time updates via Socket.IO for:
+- New bid notifications
+- Auction status changes
+- Outbid notifications
+- Winner announcements
+
+### Connect to WebSocket
+
+```javascript
+const socket = io('http://localhost:3000');
+
+// Join auction room
+socket.emit('join-auction', { auctionId: 'auction_id' });
+
+// Listen for new bids
+socket.on('new-bid', (data) => {
+  console.log('New bid:', data);
+});
+
+// Listen for auction closed
+socket.on('auction-closed', (data) => {
+  console.log('Auction closed:', data);
+});
+```
+
+---
+
+## Business Rules
+
+1. ✅ Sellers cannot bid on their own auctions
+2. ✅ Bids must be higher than current bid
+3. ✅ Auctions cannot be edited after first bid
+4. ✅ Only active, non-expired auctions shown in browse
+5. ✅ Winner is highest bidder (earliest for ties)
+6. ✅ Auctions auto-close at end time
+7. ✅ Payments held in escrow until delivery confirmation
+8. ✅ Delivery code required to release funds
+9. ✅ Email verification required for protected features
+
+---
 
 ## Testing
 
@@ -470,405 +592,28 @@ npm test
 
 # Run tests in watch mode
 npm run test:watch
+
+# Run with coverage
+npm run test:coverage
 ```
 
 ### Test Coverage
 
 The project includes:
-- **Unit tests** for models (Auction, Bid)
+- **Unit tests** for models (Auction, Bid, User, Escrow, Transaction)
 - **Integration tests** for API endpoints
+- **E2E tests** for complete user flows
 - Tests for:
   - Auction creation and validation
   - Browse and search functionality
   - Edit prevention after first bid
   - Bid placement and validation
   - Auction closure and winner determination
-4. Update the `.env` file with your configuration:
-```env
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/auctionme
-JWT_SECRET=your-secret-key
-CAMPUS_EMAIL_DOMAIN=@university.edu
-EMAIL_HOST=smtp.gmail.com
-EMAIL_USER=your-email@example.com
-EMAIL_PASSWORD=your-email-password
-```
+  - Payment processing
+  - Escrow management
+  - Delivery confirmation
 
-### Running the Application
-
-Development mode:
-```bash
-npm run dev
-```
-
-Build for production:
-```bash
-npm run build
-npm start
-```
-
-### Testing
-
-Run all tests:
-```bash
-npm test
-```
-
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
-
-Run tests with coverage:
-```bash
-npm run test:coverage
-```
-
-## API Endpoints
-
-### Authentication Endpoints
-
-#### Register a new user
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "student@university.edu",
-  "password": "securepassword123",
-  "name": "John Doe"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "message": "Registration successful. Please check your email to verify your account.",
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Doe",
-    "isVerified": false,
-    "createdAt": "...",
-    "updatedAt": "..."
-  }
-}
-```
-
-#### Verify email
-```http
-POST /api/auth/verify-email
-Content-Type: application/json
-
-{
-  "token": "verification-token-from-email"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Email verified successfully",
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Doe",
-    "isVerified": true
-  }
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "student@university.edu",
-  "password": "securepassword123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Login successful",
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Doe",
-    "isVerified": true
-  },
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
-}
-```
-
-#### Get current user
-```http
-GET /api/auth/me
-Authorization: Bearer <access-token>
-```
-
-**Response (200 OK):**
-```json
-{
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Doe",
-    "phone": "1234567890",
-    "campusLocation": "Building A",
-    "isVerified": true
-  }
-}
-```
-
-#### Logout
-```http
-POST /api/auth/logout
-Authorization: Bearer <access-token>
-Content-Type: application/json
-
-{
-  "refreshToken": "your-refresh-token"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Logout successful"
-}
-```
-
-#### Refresh access token
-```http
-POST /api/auth/refresh-token
-Content-Type: application/json
-
-{
-  "refreshToken": "your-refresh-token"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIs..."
-}
-```
-
-#### Resend verification email
-```http
-POST /api/auth/resend-verification
-Content-Type: application/json
-
-{
-  "email": "student@university.edu"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Verification email sent"
-}
-```
-
-### User Profile Endpoints
-
-All profile endpoints require authentication (Bearer token in Authorization header).
-
-#### Get user profile
-```http
-GET /api/users/profile
-Authorization: Bearer <access-token>
-```
-
-**Response (200 OK):**
-```json
-{
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Doe",
-    "phone": "1234567890",
-    "campusLocation": "Building A, Room 101",
-    "isVerified": true,
-    "createdAt": "...",
-    "updatedAt": "..."
-  }
-}
-```
-
-#### Update user profile
-```http
-PUT /api/users/profile
-Authorization: Bearer <access-token>
-Content-Type: application/json
-
-{
-  "name": "John Smith",
-  "phone": "9876543210",
-  "campusLocation": "Building B, Room 202"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Profile updated successfully",
-  "user": {
-    "_id": "...",
-    "email": "student@university.edu",
-    "name": "John Smith",
-    "phone": "9876543210",
-    "campusLocation": "Building B, Room 202",
-    "isVerified": true
-  }
-}
-```
-
-### Health Check
-
-```http
-GET /health
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "ok",
-  "message": "AuctionMe API is running"
-}
-```
-
-## Authentication Flow
-
-### Registration Flow
-1. User submits registration with campus email
-2. System validates email domain matches campus domain
-3. User account is created with `isVerified: false`
-4. Verification email is sent with a token
-5. User clicks verification link in email
-6. User's `isVerified` status is updated to `true`
-
-### Login Flow
-1. User submits email and password
-2. System validates credentials
-3. System checks if email is verified
-4. If verified, system generates access token and refresh token
-5. Tokens are returned to the user
-
-### Protected Routes
-- All routes that require authentication use the `authenticate` middleware
-- Routes that require verified users use the `requireVerified` middleware
-- For bidding and listing features, use `authenticateAndVerify` middleware
-
-## Middleware
-
-### authenticate
-Verifies JWT access token and attaches user information to the request.
-
-Usage:
-```typescript
-import { authenticate } from './middleware/auth.middleware';
-
-router.get('/protected', authenticate, (req, res) => {
-  // req.user is available here
-});
-```
-
-### requireVerified
-Checks if the authenticated user has verified their email.
-
-Usage:
-```typescript
-import { authenticate, requireVerified } from './middleware/auth.middleware';
-
-router.post('/listing', authenticate, requireVerified, (req, res) => {
-  // Only verified users can access this
-});
-```
-
-### authenticateAndVerify
-Combined middleware for authentication and verification.
-
-Usage:
-```typescript
-import { authenticateAndVerify } from './middleware/auth.middleware';
-
-router.post('/bid', authenticateAndVerify, (req, res) => {
-  // Only authenticated and verified users can bid
-});
-```
-
-## Security Features
-
-- ✅ Password hashing with bcrypt
-- ✅ JWT-based authentication
-- ✅ Refresh token rotation
-- ✅ Email verification requirement
-- ✅ Campus email domain validation
-- ✅ Secure password requirements (minimum 6 characters)
-- ✅ Token expiration
-- ✅ Protected routes with middleware
-
-## Error Handling
-
-All errors are returned in the following format:
-```json
-{
-  "error": "Error message here"
-}
-```
-
-Common HTTP status codes:
-- `200 OK`: Success
-- `201 Created`: Resource created successfully
-- `400 Bad Request`: Invalid request data
-- `401 Unauthorized`: Authentication required or invalid credentials
-- `403 Forbidden`: Insufficient permissions (e.g., email not verified)
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
-
-## Project Structure
-
-```
-AuctionMe/
-├── src/
-│   ├── config/
-│   │   └── database.js          # MongoDB connection
-│   ├── controllers/
-│   │   ├── auctionController.js # Auction API handlers
-│   │   └── bidController.js     # Bid API handlers
-│   ├── models/
-│   │   ├── Auction.js          # Auction schema
-│   │   ├── Bid.js              # Bid schema
-│   │   └── User.js             # User schema
-│   ├── routes/
-│   │   ├── auctionRoutes.js    # Auction routes
-│   │   ├── bidRoutes.js        # Bid routes
-│   │   └── index.js            # Route aggregator
-│   ├── schedulers/
-│   │   └── auctionScheduler.js # Auto-close scheduler
-│   ├── services/
-│   │   ├── auctionService.js   # Auction business logic
-│   │   └── bidService.js       # Bid business logic
-│   └── app.js                  # Main application
-├── tests/
-│   ├── integration/
-│   │   └── auction.test.js     # API integration tests
-│   └── unit/
-│       ├── auction.test.js     # Auction model tests
-│       └── bid.test.js         # Bid model tests
-├── .env.example                # Environment variables template
-├── .gitignore
-├── jest.config.js              # Jest configuration
-├── package.json
-└── Readme.md
-```
+---
 
 ## Security Considerations
 
@@ -876,66 +621,95 @@ AuctionMe/
 - Helmet.js for security headers
 - CORS configuration
 - Mongoose schema validation
-- Business logic validation (bid amounts, edit permissions, etc.)
+- Business logic validation
+- JWT authentication with refresh tokens
+- Email verification for campus users
+- Rate limiting on API endpoints
+- Secure delivery code generation
+- Webhook signature verification for payments
 
-## Future Enhancements
+---
 
-- User authentication and authorization
-- Image upload functionality
-- Real-time bid notifications (WebSockets)
-- Email notifications
-- Payment integration with escrow
-- Delivery code verification system
-- Rating and review system
-- Search with Elasticsearch
-- Caching with Redis
-src/
-├── config/           # Configuration files
-│   ├── index.ts      # Main config
-│   └── database.ts   # Database connection
-├── controllers/      # Request handlers
-│   ├── auth.controller.ts
-│   └── user.controller.ts
-├── middleware/       # Express middleware
-│   └── auth.middleware.ts
-├── models/          # Database models
-│   └── User.model.ts
-├── routes/          # API routes
-│   ├── auth.routes.ts
-│   ├── user.routes.ts
-│   └── index.ts
-├── services/        # Business logic
-│   ├── auth.service.ts
-│   └── user.service.ts
-├── types/           # TypeScript types
-│   └── user.types.ts
-├── utils/           # Utility functions
-│   ├── email.utils.ts
-│   ├── jwt.utils.ts
-│   └── validation.utils.ts
-├── app.ts           # Express app setup
-└── index.ts         # Entry point
+## Project Structure
 
-tests/               # Test files
-├── auth.test.ts
-└── user.test.ts
+```
+AuctionMe/
+├── src/
+│   ├── config/
+│   │   └── database.ts          # MongoDB connection
+│   ├── controllers/
+│   │   ├── auctionController.ts # Auction API handlers
+│   │   ├── bidController.ts     # Bid API handlers
+│   │   ├── authController.ts    # Authentication handlers
+│   │   ├── paymentController.ts # Payment handlers
+│   │   └── escrowController.ts  # Escrow handlers
+│   ├── models/
+│   │   ├── Auction.ts          # Auction schema
+│   │   ├── Bid.ts              # Bid schema
+│   │   ├── User.ts             # User schema
+│   │   ├── Transaction.ts      # Transaction schema
+│   │   ├── Escrow.ts           # Escrow schema
+│   │   └── Notification.ts     # Notification schema
+│   ├── routes/
+│   │   ├── auctionRoutes.ts    # Auction routes
+│   │   ├── bidRoutes.ts        # Bid routes
+│   │   ├── authRoutes.ts       # Auth routes
+│   │   ├── paymentRoutes.ts    # Payment routes
+│   │   └── escrowRoutes.ts     # Escrow routes
+│   ├── schedulers/
+│   │   └── auctionScheduler.ts # Auto-close scheduler
+│   ├── services/
+│   │   ├── auctionService.ts   # Auction business logic
+│   │   ├── bidService.ts       # Bid business logic
+│   │   ├── authService.ts      # Auth business logic
+│   │   ├── paymentService.ts   # Payment integration
+│   │   ├── escrowService.ts    # Escrow management
+│   │   ├── transactionService.ts # Transaction management
+│   │   ├── notificationService.ts # Notifications
+│   │   └── webSocketService.ts # WebSocket handling
+│   ├── middleware/
+│   │   ├── auth.ts             # Authentication middleware
+│   │   └── rateLimiter.ts      # Rate limiting
+│   └── app.ts                  # Main application
+├── tests/
+│   ├── integration/
+│   │   ├── auction.test.ts     # Auction API tests
+│   │   ├── payment.integration.test.ts
+│   │   └── escrow.integration.test.ts
+│   └── unit/
+│       ├── auction.test.ts     # Auction model tests
+│       ├── bid.test.ts         # Bid model tests
+│       └── escrow.test.ts      # Escrow model tests
+├── .env.example                # Environment variables template
+├── .gitignore
+├── jest.config.js              # Jest configuration
+├── package.json
+└── README.md
 ```
 
+---
+
 ## Future Enhancements
 
-- [ ] Password reset functionality
-- [ ] Two-factor authentication
-- [ ] Rate limiting
-- [ ] Account lockout after failed attempts
-- [ ] OAuth integration (Google, Facebook)
-- [ ] Email templates with better design
-- [ ] Admin role and permissions
-- [ ] User activity logging
+- Image upload to cloud storage (AWS S3/Cloudinary)
+- Push notifications for mobile apps
+- Advanced search with Elasticsearch
+- Caching with Redis
+- Rating and review system
+- Dispute resolution system
+- Multi-currency support
+- Auction categories and tags
+- Watchlist functionality
+- Automated bidding (proxy bidding)
+
+---
 
 ## License
 
 ISC
 
-## Author
+---
 
-AuctionMe Team
+## Support
+
+For issues, questions, or contributions, please visit the [GitHub repository](https://github.com/Hughesneal88/AuctionMe).

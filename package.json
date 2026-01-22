@@ -2,48 +2,35 @@
   "name": "auctionme",
   "version": "1.0.0",
   "description": "An app that allows people to put up stuff for auction on campus and deliver the items to the user",
-  "main": "src/app.js",
-  "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "jest --testTimeout=10000",
-    "test:watch": "jest --watch"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "echo 'Linting not configured yet'"
+    "lint": "tsc --noEmit"
   },
-  "keywords": ["auction", "campus", "marketplace"],
+  "keywords": ["auction", "campus", "marketplace", "bidding", "authentication", "escrow", "payments", "mobile-money"],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",
     "helmet": "^8.1.0",
-    "mongoose": "^9.1.5",
-    "node-cron": "^4.2.1"
-  },
-  "devDependencies": {
-    "eslint": "^9.39.2",
-    "jest": "^30.2.0",
-    "nodemon": "^3.1.11",
-    "supertest": "^7.2.2"
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
-    "nodemailer": "^7.0.12"
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.12",
+    "socket.io": "^4.8.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -54,6 +41,7 @@
     "@types/node": "^25.0.10",
     "@types/nodemailer": "^7.0.5",
     "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
