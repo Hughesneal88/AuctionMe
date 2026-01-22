@@ -9,9 +9,10 @@ const router = Router();
  * All routes require authentication
  */
 
-// Generate a delivery code
+// Generate a delivery code (rate limited to prevent abuse)
 router.post(
   '/',
+  RateLimiter.payment,
   deliveryCodeController.generateCode.bind(deliveryCodeController)
 );
 
@@ -22,15 +23,17 @@ router.post(
   deliveryCodeController.verifyCode.bind(deliveryCodeController)
 );
 
-// Get delivery code by auction ID
+// Get delivery code by auction ID (rate limited to prevent information disclosure)
 router.get(
   '/auction/:auctionId',
+  RateLimiter.notification,
   deliveryCodeController.getByAuctionId.bind(deliveryCodeController)
 );
 
-// Check if delivery code is valid
+// Check if delivery code is valid (rate limited)
 router.get(
   '/:deliveryCodeId/valid',
+  RateLimiter.notification,
   deliveryCodeController.checkValidity.bind(deliveryCodeController)
 );
 
