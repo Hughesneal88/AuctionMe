@@ -1,7 +1,28 @@
 import request from 'supertest';
-import app from '../index';
+import express from 'express';
+import deliveryRoutes from '../routes/deliveryRoutes';
 import { ConfirmationCodeService } from '../services/confirmationCodeService';
 import { TransactionStatus } from '../models';
+
+// Create a simple test app without database dependencies
+const createTestApp = () => {
+  const app = express();
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use('/api/delivery', deliveryRoutes);
+  
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+  
+  app.use((req, res) => {
+    res.status(404).json({ success: false, message: 'Route not found' });
+  });
+  
+  return app;
+};
+
+const app = createTestApp();
 
 describe('Delivery API Integration Tests', () => {
   beforeEach(() => {
