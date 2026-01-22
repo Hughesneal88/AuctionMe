@@ -55,10 +55,10 @@ class EscrowService {
 
       await escrow.save();
 
-      console.log(`Escrow created: ${escrowId} with delivery code: ${deliveryCode}`);
+      console.log(`Escrow created: ${escrowId}`);
       
       // In production, send the delivery code to the buyer via SMS/Email
-      // For now, we'll just log it
+      // IMPORTANT: Do NOT log the delivery code in production
       return escrow;
     } catch (error: any) {
       console.error('Error creating escrow:', error.message);

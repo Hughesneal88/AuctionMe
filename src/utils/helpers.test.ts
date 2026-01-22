@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   generateTransactionId,
   generateEscrowId,
@@ -55,7 +56,6 @@ describe('Helper Functions', () => {
     it('should verify valid webhook signature', () => {
       const payload = JSON.stringify({ test: 'data' });
       const secret = 'test-secret';
-      const crypto = require('crypto');
       const signature = crypto
         .createHmac('sha256', secret)
         .update(payload)
