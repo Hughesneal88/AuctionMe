@@ -213,7 +213,7 @@ describe('Auction API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/api/auctions/:id/bids', () => {
+  describe('POST /api/auctions/:id/bids', () => {
     let auction;
     let bidderId;
 
@@ -237,7 +237,7 @@ describe('Auction API Integration Tests', () => {
 
     it('should place a valid bid', async () => {
       const response = await request(app)
-        .post(`/api/api/auctions/${auction._id}/bids`)
+        .post(`/api/auctions/${auction._id}/bids`)
         .send({
           amount: 150,
           bidderId
@@ -250,7 +250,7 @@ describe('Auction API Integration Tests', () => {
 
     it('should reject bid lower than current bid', async () => {
       await request(app)
-        .post(`/api/api/auctions/${auction._id}/bids`)
+        .post(`/api/auctions/${auction._id}/bids`)
         .send({
           amount: 50,
           bidderId
@@ -260,7 +260,7 @@ describe('Auction API Integration Tests', () => {
 
     it('should prevent seller from bidding on own auction', async () => {
       const response = await request(app)
-        .post(`/api/api/auctions/${auction._id}/bids`)
+        .post(`/api/auctions/${auction._id}/bids`)
         .send({
           amount: 150,
           bidderId: sellerId
@@ -272,7 +272,7 @@ describe('Auction API Integration Tests', () => {
 
     it('should update auction after first bid', async () => {
       await request(app)
-        .post(`/api/api/auctions/${auction._id}/bids`)
+        .post(`/api/auctions/${auction._id}/bids`)
         .send({
           amount: 150,
           bidderId

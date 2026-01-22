@@ -278,7 +278,7 @@ Manually close an auction and determine the winner. (Usually done automatically 
 
 #### Place Bid
 
-**POST** `/api/api/auctions/:id/bids`
+**POST** `/api/auctions/:id/bids`
 
 Place a bid on an auction.
 
@@ -315,7 +315,7 @@ Place a bid on an auction.
 
 #### Get Auction Bids
 
-**GET** `/api/api/auctions/:id/bids`
+**GET** `/api/auctions/:id/bids`
 
 Get all bids for a specific auction.
 
@@ -349,7 +349,7 @@ Get all bids for a specific auction.
 
 #### Get Highest Bid
 
-**GET** `/api/api/auctions/:id/bids/highest`
+**GET** `/api/auctions/:id/bids/highest`
 
 Get the highest bid for an auction.
 
@@ -371,7 +371,7 @@ Get the highest bid for an auction.
 
 #### Get User Bids
 
-**GET** `/api/api/users/:userId/bids`
+**GET** `/api/users/:userId/bids`
 
 Get all bids placed by a specific user.
 

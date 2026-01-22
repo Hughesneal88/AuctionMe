@@ -5,6 +5,6 @@ const auctionRoutes = require('./auctionRoutes');
 const bidRoutes = require('./bidRoutes');
 
 router.use('/auctions', auctionRoutes);
-router.use('/api', bidRoutes);
+router.use('/', bidRoutes);
 
 module.exports = router;

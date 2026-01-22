@@ -59,7 +59,9 @@ class AuctionService {
     
     // Recalculate end time if duration changed
     if (updateData.duration) {
-      auction.endTime = new Date(auction.startTime);
+      const now = new Date();
+      auction.startTime = now; // Reset start time when duration changes
+      auction.endTime = new Date(now);
       auction.endTime.setHours(auction.endTime.getHours() + updateData.duration);
     }
     
