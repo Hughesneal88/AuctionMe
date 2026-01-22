@@ -68,6 +68,8 @@ cp .env.example .env
 npm run dev
 ```
 
+The server will automatically seed the database with sample data in development mode.
+
 ### Production Mode
 ```bash
 npm run build
@@ -75,6 +77,39 @@ npm start
 ```
 
 The server will start on `http://localhost:3000`
+
+## Demo Client
+
+A demo HTML client is included (`demo-client.html`) to test the real-time bidding system:
+
+1. Start the server:
+   ```bash
+   npm run dev
+   ```
+
+2. Open `demo-client.html` in a web browser (or multiple browsers to simulate multiple users)
+
+3. The demo client allows you to:
+   - Connect to the WebSocket server
+   - Join an auction room
+   - Place bids
+   - Receive real-time updates
+   - View notifications
+
+### Sample Data
+
+When running in development mode, the server automatically seeds the database with:
+
+**Users:**
+- `seller-1` - John Seller (seller@example.com)
+- `buyer-1` - Alice Buyer (buyer1@example.com)
+- `buyer-2` - Bob Buyer (buyer2@example.com)
+- `buyer-3` - Charlie Buyer (buyer3@example.com)
+
+**Auctions:**
+- `test-auction-1` - Vintage MacBook Pro 2015 (starting: $100, increment: $10)
+- `test-auction-2` - Textbooks: Computer Science Bundle (starting: $50, increment: $5)
+- `test-auction-3` - Bicycle - Mountain Bike (starting: $200, increment: $20)
 
 ## API Endpoints
 
