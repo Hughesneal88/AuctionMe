@@ -1,0 +1,35 @@
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { config } from '../config';
+
+export interface JwtPayload {
+  userId: string;
+  email: string;
+}
+
+export const generateAccessToken = (payload: JwtPayload): string => {
+  return jwt.sign(payload, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn,
+  } as SignOptions);
+};
+
+export const generateRefreshToken = (payload: JwtPayload): string => {
+  return jwt.sign(payload, config.jwt.refreshSecret, {
+    expiresIn: config.jwt.refreshExpiresIn,
+  } as SignOptions);
+};
+
+export const verifyAccessToken = (token: string): JwtPayload => {
+  return jwt.verify(token, config.jwt.secret) as JwtPayload;
+};
+
+export const verifyRefreshToken = (token: string): JwtPayload => {
+  return jwt.verify(token, config.jwt.refreshSecret) as JwtPayload;
+};
+
+export const generateVerificationToken = (): string => {
+  return jwt.sign(
+    { random: Math.random() },
+    config.jwt.secret,
+    { expiresIn: '24h' } as SignOptions
+  );
+};
