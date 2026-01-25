@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import Transaction from '../models/Transaction';
 import Escrow from '../models/Escrow';
 import transactionService from '../services/transactionService';
 import escrowService from '../services/escrowService';
 import { TransactionStatus, EscrowStatus, PaymentMethod } from '../types';
-import { generateDeliveryCode } from '../utils/helpers';
+import { generateDeliveryCode, encryptDeliveryCode } from '../utils/helpers';
 
 /**
  * End-to-end test for the complete payment and escrow flow
@@ -64,17 +65,9 @@ describe('Payment and Escrow Flow E2E', () => {
     const deliveryCode = '123456'; // Simulated delivery code
     
     // We need to update the escrow with a known hashed and encrypted code for testing
-    const crypto = require('crypto');
     const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
-    
-    // Encrypt the code using the same method as the service
     const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionSecret.padEnd(32, '0').substring(0, 32)), iv);
-    let encrypted = cipher.update(deliveryCode, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    const encryptedCode = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
     
     if (escrow) {
       escrow.deliveryCode = hashedCode;
@@ -218,12 +211,7 @@ describe('Payment and Escrow Flow E2E', () => {
     
     // Encrypt the code
     const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionSecret.padEnd(32, '0').substring(0, 32)), iv);
-    let encrypted = cipher.update(deliveryCode, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    const encryptedCode = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
     
     if (escrow) {
       escrow.deliveryCode = hashedCode;
@@ -267,12 +255,7 @@ describe('Payment and Escrow Flow E2E', () => {
     const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
     
     const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionSecret.padEnd(32, '0').substring(0, 32)), iv);
-    let encrypted = cipher.update(deliveryCode, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    const encryptedCode = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
     
     if (escrow) {
       escrow.deliveryCode = hashedCode;

@@ -77,7 +77,7 @@ export class NotificationService {
     // For now, we'll create an in-app notification
     console.log(`🔔 DELIVERY CODE NOTIFICATION for user ${userId}:`);
     console.log(`   Escrow: ${escrowId}`);
-    console.log(`   Code: ${deliveryCode}`);
+    console.log(`   Code: [REDACTED] (sent to user via notification)`);
     console.log(`   ⚠️ In production, send via SMS/Email`);
     
     return this.createNotification(userId, NotificationType.DELIVERY_CODE, message, auctionId);
