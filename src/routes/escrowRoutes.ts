@@ -22,16 +22,18 @@ router.get('/transaction/:transactionId', generalRateLimiter, (req, res) =>
 /**
  * GET /api/escrow/:escrowId/delivery-code
  * Get delivery code for buyer (authenticated)
+ * Rate limiting applied before authentication for better protection
  */
-router.get('/:escrowId/delivery-code', authenticate, strictRateLimiter, (req, res) => 
+router.get('/:escrowId/delivery-code', strictRateLimiter, authenticate, (req, res) => 
   escrowController.getDeliveryCode(req, res)
 );
 
 /**
  * GET /api/escrow/buyer/:buyerId
  * Get all escrows for a buyer (authenticated)
+ * Rate limiting applied before authentication for better protection
  */
-router.get('/buyer/:buyerId', authenticate, generalRateLimiter, (req, res) => 
+router.get('/buyer/:buyerId', generalRateLimiter, authenticate, (req, res) => 
   escrowController.getBuyerEscrows(req, res)
 );
 
