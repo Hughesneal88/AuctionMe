@@ -10,7 +10,8 @@ export interface IEscrow extends Document {
   amount: number;
   currency: string;
   status: EscrowStatus;
-  deliveryCode: string;
+  deliveryCode: string; // Hashed for verification
+  deliveryCodeEncrypted?: string; // Encrypted for buyer retrieval (optional)
   lockedAt?: Date;
   confirmedAt?: Date;
   releasedAt?: Date;
@@ -70,6 +71,10 @@ const escrowSchema = new Schema<IEscrow>(
       type: String,
       required: true,
       index: true
+    },
+    deliveryCodeEncrypted: {
+      type: String,
+      required: false
     },
     lockedAt: {
       type: Date

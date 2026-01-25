@@ -126,7 +126,7 @@ class TransactionService {
         await transaction.save();
 
         // Create escrow after successful payment
-        await escrowService.createEscrow(
+        const { escrow, deliveryCode } = await escrowService.createEscrow(
           transaction.transactionId,
           transaction.auctionId,
           transaction.buyerId,
@@ -135,7 +135,11 @@ class TransactionService {
           transaction.currency
         );
 
+        // TODO: Send delivery code to buyer via SMS/Email using notification service
+        // For now, log it for development purposes only
         console.log(`Payment completed for transaction: ${transactionId}`);
+        console.log(`DELIVERY CODE for buyer ${transaction.buyerId}: ${deliveryCode} (Escrow: ${escrow.escrowId})`);
+        console.log('⚠️ In production, this should be sent via SMS/Email, NOT logged');
       } else if (status === 'failed') {
         transaction.status = TransactionStatus.FAILED;
         if (metadata) {

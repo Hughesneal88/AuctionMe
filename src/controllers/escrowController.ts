@@ -234,6 +234,82 @@ export class EscrowController {
       });
     }
   }
+
+  /**
+   * Get buyer's escrows
+   * GET /api/escrow/buyer/:buyerId
+   */
+  async getBuyerEscrows(req: Request, res: Response): Promise<void> {
+    try {
+      const buyerId = req.params.buyerId as string;
+
+      // Authorization check: user must be the buyer
+      if (req.user && req.user.userId !== buyerId) {
+        res.status(403).json({
+          success: false,
+          error: 'Unauthorized: You can only view your own escrows'
+        });
+        return;
+      }
+
+      const escrows = await escrowService.getEscrowsByBuyer(buyerId);
+
+      // Don't expose hashed or encrypted delivery codes
+      const sanitizedEscrows = escrows.map(escrow => {
+        const escrowData = escrow.toObject();
+        delete escrowData.deliveryCode;
+        delete escrowData.deliveryCodeEncrypted;
+        return escrowData;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: sanitizedEscrows
+      });
+    } catch (error: any) {
+      console.error('Error fetching buyer escrows:', error.message);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get delivery code for buyer
+   * GET /api/escrow/:escrowId/delivery-code
+   */
+  async getDeliveryCode(req: Request, res: Response): Promise<void> {
+    try {
+      const escrowId = req.params.escrowId as string;
+      const buyerId = req.user?.userId;
+
+      if (!buyerId) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+
+      const deliveryCode = await escrowService.getDeliveryCodeForBuyer(escrowId, buyerId);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          escrowId,
+          deliveryCode,
+          message: 'Share this code with the seller to confirm delivery. This code can only be used once.'
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching delivery code:', error.message);
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
 }
 
 export default new EscrowController();

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import escrowController from '../controllers/escrowController';
 import { generalRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -16,6 +17,22 @@ router.get('/:escrowId/status', generalRateLimiter, (req, res) => escrowControll
  */
 router.get('/transaction/:transactionId', generalRateLimiter, (req, res) => 
   escrowController.getEscrowByTransaction(req, res)
+);
+
+/**
+ * GET /api/escrow/:escrowId/delivery-code
+ * Get delivery code for buyer (authenticated)
+ */
+router.get('/:escrowId/delivery-code', authenticate, strictRateLimiter, (req, res) => 
+  escrowController.getDeliveryCode(req, res)
+);
+
+/**
+ * GET /api/escrow/buyer/:buyerId
+ * Get all escrows for a buyer (authenticated)
+ */
+router.get('/buyer/:buyerId', authenticate, generalRateLimiter, (req, res) => 
+  escrowController.getBuyerEscrows(req, res)
 );
 
 /**
