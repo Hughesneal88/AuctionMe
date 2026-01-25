@@ -2,7 +2,8 @@ export enum NotificationType {
   OUTBID = 'OUTBID',
   AUCTION_WON = 'AUCTION_WON',
   AUCTION_LOST = 'AUCTION_LOST',
-  BID_PLACED = 'BID_PLACED'
+  BID_PLACED = 'BID_PLACED',
+  DELIVERY_CODE = 'DELIVERY_CODE'
 }
 
 export interface Notification {

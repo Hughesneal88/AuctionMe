@@ -61,3 +61,42 @@ export const compareDeliveryCode = (code: string, hash: string): boolean => {
     Buffer.from(hash)
   );
 };
+
+/**
+ * Encrypt delivery code for secure storage (allows buyer retrieval)
+ * Uses AES-256-GCM encryption
+ */
+export const encryptDeliveryCode = (code: string, secret: string): string => {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(secret.padEnd(32, '0').substring(0, 32)), iv);
+  
+  let encrypted = cipher.update(code, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const authTag = cipher.getAuthTag();
+  
+  // Return iv:authTag:encrypted
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+};
+
+/**
+ * Decrypt delivery code
+ */
+export const decryptDeliveryCode = (encryptedData: string, secret: string): string => {
+  const parts = encryptedData.split(':');
+  if (parts.length !== 3) {
+    throw new Error('Invalid encrypted data format');
+  }
+  
+  const iv = Buffer.from(parts[0], 'hex');
+  const authTag = Buffer.from(parts[1], 'hex');
+  const encrypted = parts[2];
+  
+  const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(secret.padEnd(32, '0').substring(0, 32)), iv);
+  decipher.setAuthTag(authTag);
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
+};

@@ -5,7 +5,9 @@ import {
   generateEscrowId,
   generateDeliveryCode,
   hashDeliveryCode,
-  compareDeliveryCode
+  compareDeliveryCode,
+  encryptDeliveryCode,
+  decryptDeliveryCode
 } from '../utils/helpers';
 import paymentService from './paymentService';
 
@@ -23,7 +25,7 @@ class EscrowService {
     sellerId: string,
     amount: number,
     currency: string = 'USD'
-  ): Promise<IEscrow> {
+  ): Promise<{ escrow: IEscrow; deliveryCode: string }> {
     try {
       // Verify transaction exists and is completed
       const transaction = await Transaction.findOne({ transactionId });
@@ -38,6 +40,11 @@ class EscrowService {
       const escrowId = generateEscrowId();
       const deliveryCode = generateDeliveryCode();
       const hashedCode = hashDeliveryCode(deliveryCode);
+      
+      // Encrypt delivery code for buyer retrieval
+      // Use environment variable or a secure key
+      const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+      const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
 
       // Create escrow record
       const escrow = new Escrow({
@@ -50,6 +57,7 @@ class EscrowService {
         currency,
         status: EscrowStatus.LOCKED,
         deliveryCode: hashedCode,
+        deliveryCodeEncrypted: encryptedCode,
         lockedAt: new Date()
       });
 
@@ -57,9 +65,10 @@ class EscrowService {
 
       console.log(`Escrow created: ${escrowId}`);
       
-      // In production, send the delivery code to the buyer via SMS/Email
+      // Return both escrow and the plain delivery code
+      // The caller should send this to the buyer via notification service
       // IMPORTANT: Do NOT log the delivery code in production
-      return escrow;
+      return { escrow, deliveryCode };
     } catch (error: any) {
       console.error('Error creating escrow:', error.message);
       throw error;
@@ -82,11 +91,13 @@ class EscrowService {
 
   /**
    * Confirm delivery with code provided by buyer
+   * @param autoRelease - If true, automatically releases funds after confirmation
    */
   async confirmDelivery(
     escrowId: string,
     deliveryCode: string,
-    confirmedBy: string
+    confirmedBy: string,
+    autoRelease: boolean = true
   ): Promise<IEscrow> {
     try {
       const escrow = await Escrow.findOne({ escrowId });
@@ -105,13 +116,19 @@ class EscrowService {
         throw new Error('Invalid delivery code');
       }
 
-      // Update escrow status
-      escrow.status = EscrowStatus.PENDING_CONFIRMATION;
+      // Update escrow status and clear encrypted code (one-time use)
+      escrow.status = autoRelease ? EscrowStatus.RELEASED : EscrowStatus.PENDING_CONFIRMATION;
       escrow.confirmedAt = new Date();
       escrow.deliveryConfirmedBy = confirmedBy;
+      escrow.deliveryCodeEncrypted = undefined; // Clear encrypted code after use
+      
+      if (autoRelease) {
+        escrow.releasedAt = new Date();
+      }
+      
       await escrow.save();
 
-      console.log(`Delivery confirmed for escrow: ${escrowId}`);
+      console.log(`Delivery confirmed for escrow: ${escrowId}${autoRelease ? ' and funds released' : ''}`);
       return escrow;
     } catch (error: any) {
       console.error('Error confirming delivery:', error.message);
@@ -219,6 +236,51 @@ class EscrowService {
     });
 
     return releasedEscrows.reduce((sum, escrow) => sum + escrow.amount, 0);
+  }
+
+  /**
+   * Get escrows for a buyer (for buyer to view their delivery codes)
+   * Note: Returns escrow info but NOT the delivery code hash
+   */
+  async getEscrowsByBuyer(buyerId: string): Promise<IEscrow[]> {
+    return await Escrow.find({ buyerId }).sort({ createdAt: -1 });
+  }
+
+  /**
+   * Get delivery code for buyer (decrypted)
+   * Only works if escrow is in LOCKED status and buyer is authorized
+   */
+  async getDeliveryCodeForBuyer(escrowId: string, buyerId: string): Promise<string> {
+    try {
+      const escrow = await Escrow.findOne({ escrowId });
+      
+      if (!escrow) {
+        throw new Error('Escrow not found');
+      }
+
+      // Verify buyer authorization
+      if (escrow.buyerId !== buyerId) {
+        throw new Error('Unauthorized: You are not the buyer for this escrow');
+      }
+
+      // Only allow retrieval for LOCKED escrows
+      if (escrow.status !== EscrowStatus.LOCKED) {
+        throw new Error('Delivery code is no longer available');
+      }
+
+      // Decrypt and return delivery code
+      if (!escrow.deliveryCodeEncrypted) {
+        throw new Error('Delivery code not available');
+      }
+
+      const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+      const deliveryCode = decryptDeliveryCode(escrow.deliveryCodeEncrypted, encryptionSecret);
+      
+      return deliveryCode;
+    } catch (error: any) {
+      console.error('Error retrieving delivery code:', error.message);
+      throw error;
+    }
   }
 }
 

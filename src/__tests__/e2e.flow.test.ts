@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import Transaction from '../models/Transaction';
 import Escrow from '../models/Escrow';
 import transactionService from '../services/transactionService';
 import escrowService from '../services/escrowService';
 import { TransactionStatus, EscrowStatus, PaymentMethod } from '../types';
-import { generateDeliveryCode } from '../utils/helpers';
+import { generateDeliveryCode, encryptDeliveryCode } from '../utils/helpers';
 
 /**
  * End-to-end test for the complete payment and escrow flow
@@ -59,15 +60,18 @@ describe('Payment and Escrow Flow E2E', () => {
     expect(canWithdraw).toBe(false);
 
     // Step 5: Buyer receives item and provides delivery code
-    // For testing, we need to know the delivery code
-    // In production, this would be sent to the buyer via SMS/Email
+    // For testing, we simulate the delivery code retrieval
+    // In production, buyer would get code via SMS/Email or retrieve via API
     const deliveryCode = '123456'; // Simulated delivery code
     
-    // We need to update the escrow with a known hashed code for testing
-    const crypto = require('crypto');
+    // We need to update the escrow with a known hashed and encrypted code for testing
     const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
+    const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
+    
     if (escrow) {
       escrow.deliveryCode = hashedCode;
+      escrow.deliveryCodeEncrypted = encryptedCode;
       await escrow.save();
     }
 
@@ -75,7 +79,8 @@ describe('Payment and Escrow Flow E2E', () => {
     const confirmedEscrow = await escrowService.confirmDelivery(
       escrow!.escrowId,
       deliveryCode,
-      'SELLER-001'
+      'SELLER-001',
+      false // Don't auto-release for this test
     );
 
     expect(confirmedEscrow.status).toBe(EscrowStatus.PENDING_CONFIRMATION);
@@ -203,17 +208,75 @@ describe('Payment and Escrow Flow E2E', () => {
     const deliveryCode = '654321';
     const crypto = require('crypto');
     const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
+    
+    // Encrypt the code
+    const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
+    
     if (escrow) {
       escrow.deliveryCode = hashedCode;
+      escrow.deliveryCodeEncrypted = encryptedCode;
       await escrow.save();
     }
 
-    await escrowService.confirmDelivery(escrow!.escrowId, deliveryCode, 'SELLER-005');
-    await escrowService.releaseFunds(escrow!.escrowId);
+    // Confirm delivery with auto-release (default)
+    const confirmedEscrow = await escrowService.confirmDelivery(escrow!.escrowId, deliveryCode, 'SELLER-005');
+    expect(confirmedEscrow.status).toBe(EscrowStatus.RELEASED);
 
-    // Try to release again
+    // Try to release again (should fail since already released)
     await expect(
       escrowService.releaseFunds(escrow!.escrowId)
     ).rejects.toThrow('Delivery must be confirmed before releasing funds');
+  });
+
+  it('should support auto-release on delivery confirmation', async () => {
+    // Create and complete transaction
+    const transaction = await transactionService.createTransaction(
+      'AUCTION-006',
+      'BUYER-006',
+      'SELLER-006',
+      350,
+      'USD',
+      PaymentMethod.MOBILE_MONEY
+    );
+
+    await transactionService.handlePaymentCallback(
+      transaction.transactionId,
+      'completed',
+      'PROVIDER-REF-XYZ'
+    );
+
+    const escrow = await escrowService.getEscrowByTransaction(transaction.transactionId);
+    expect(escrow).toBeDefined();
+
+    // Setup delivery code
+    const deliveryCode = '789012';
+    const crypto = require('crypto');
+    const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
+    
+    const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+    const encryptedCode = encryptDeliveryCode(deliveryCode, encryptionSecret);
+    
+    if (escrow) {
+      escrow.deliveryCode = hashedCode;
+      escrow.deliveryCodeEncrypted = encryptedCode;
+      await escrow.save();
+    }
+
+    // Confirm delivery with auto-release enabled (default)
+    const confirmedEscrow = await escrowService.confirmDelivery(
+      escrow!.escrowId,
+      deliveryCode,
+      'SELLER-006',
+      true
+    );
+
+    // Funds should be automatically released
+    expect(confirmedEscrow.status).toBe(EscrowStatus.RELEASED);
+    expect(confirmedEscrow.releasedAt).toBeDefined();
+
+    // Seller should be able to withdraw immediately
+    const canWithdraw = await escrowService.canWithdraw('SELLER-006', 350);
+    expect(canWithdraw).toBe(true);
   });
 });

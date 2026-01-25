@@ -3,6 +3,7 @@ import { TransactionStatus, TransactionType, PaymentMethod } from '../types';
 import { generateTransactionId } from '../utils/helpers';
 import paymentService from './paymentService';
 import escrowService from './escrowService';
+import { notificationService } from './notificationService';
 
 /**
  * Service for managing transactions
@@ -126,7 +127,7 @@ class TransactionService {
         await transaction.save();
 
         // Create escrow after successful payment
-        await escrowService.createEscrow(
+        const { escrow, deliveryCode } = await escrowService.createEscrow(
           transaction.transactionId,
           transaction.auctionId,
           transaction.buyerId,
@@ -135,7 +136,21 @@ class TransactionService {
           transaction.currency
         );
 
+        // Send delivery code to buyer via notification service
+        try {
+          await notificationService.notifyDeliveryCode(
+            transaction.buyerId,
+            transaction.auctionId,
+            escrow.escrowId,
+            deliveryCode
+          );
+        } catch (notificationError) {
+          console.error('Failed to send delivery code notification:', notificationError);
+          // Don't fail the transaction if notification fails
+        }
+
         console.log(`Payment completed for transaction: ${transactionId}`);
+        console.log(`Escrow created: ${escrow.escrowId}`);
       } else if (status === 'failed') {
         transaction.status = TransactionStatus.FAILED;
         if (metadata) {
