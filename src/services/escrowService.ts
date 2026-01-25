@@ -91,11 +91,13 @@ class EscrowService {
 
   /**
    * Confirm delivery with code provided by buyer
+   * @param autoRelease - If true, automatically releases funds after confirmation
    */
   async confirmDelivery(
     escrowId: string,
     deliveryCode: string,
-    confirmedBy: string
+    confirmedBy: string,
+    autoRelease: boolean = true
   ): Promise<IEscrow> {
     try {
       const escrow = await Escrow.findOne({ escrowId });
@@ -115,13 +117,18 @@ class EscrowService {
       }
 
       // Update escrow status and clear encrypted code (one-time use)
-      escrow.status = EscrowStatus.PENDING_CONFIRMATION;
+      escrow.status = autoRelease ? EscrowStatus.RELEASED : EscrowStatus.PENDING_CONFIRMATION;
       escrow.confirmedAt = new Date();
       escrow.deliveryConfirmedBy = confirmedBy;
       escrow.deliveryCodeEncrypted = undefined; // Clear encrypted code after use
+      
+      if (autoRelease) {
+        escrow.releasedAt = new Date();
+      }
+      
       await escrow.save();
 
-      console.log(`Delivery confirmed for escrow: ${escrowId}`);
+      console.log(`Delivery confirmed for escrow: ${escrowId}${autoRelease ? ' and funds released' : ''}`);
       return escrow;
     } catch (error: any) {
       console.error('Error confirming delivery:', error.message);

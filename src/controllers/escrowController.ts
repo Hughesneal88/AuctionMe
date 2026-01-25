@@ -82,7 +82,7 @@ export class EscrowController {
   async confirmDelivery(req: Request, res: Response): Promise<void> {
     try {
       const escrowId = req.params.escrowId as string;
-      const { deliveryCode, confirmedBy } = req.body;
+      const { deliveryCode, confirmedBy, autoRelease } = req.body;
 
       if (!deliveryCode || !confirmedBy) {
         res.status(400).json({
@@ -92,15 +92,25 @@ export class EscrowController {
         return;
       }
 
-      const escrow = await escrowService.confirmDelivery(escrowId, deliveryCode, confirmedBy);
+      // Default to auto-release if not specified
+      const shouldAutoRelease = autoRelease !== undefined ? autoRelease : true;
+      const escrow = await escrowService.confirmDelivery(
+        escrowId, 
+        deliveryCode, 
+        confirmedBy, 
+        shouldAutoRelease
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Delivery confirmed successfully',
+        message: escrow.status === 'RELEASED' 
+          ? 'Delivery confirmed and funds released successfully' 
+          : 'Delivery confirmed successfully',
         data: {
           escrowId: escrow.escrowId,
           status: escrow.status,
-          confirmedAt: escrow.confirmedAt
+          confirmedAt: escrow.confirmedAt,
+          releasedAt: escrow.releasedAt
         }
       });
     } catch (error: any) {

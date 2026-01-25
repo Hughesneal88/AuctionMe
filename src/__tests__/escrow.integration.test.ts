@@ -107,9 +107,43 @@ describe('Escrow API Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('confirmed');
+      expect(response.body.data.status).toBe(EscrowStatus.RELEASED); // Auto-released by default
       
       // Verify encrypted code was cleared
       const updatedEscrow = await Escrow.findOne({ escrowId: 'ESC-TEST-002' });
+      expect(updatedEscrow?.deliveryCodeEncrypted).toBeUndefined();
+    });
+
+    it('should confirm delivery without auto-release if specified', async () => {
+      const deliveryCode = '123456';
+      const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+      const escrow = new Escrow({
+        escrowId: 'ESC-TEST-002B',
+        transactionId: 'TXN-TEST-002B',
+        auctionId: 'AUCTION-001',
+        buyerId: buyerUserId,
+        sellerId: sellerUserId,
+        amount: 100,
+        deliveryCode: hashDeliveryCode(deliveryCode),
+        deliveryCodeEncrypted: encryptDeliveryCode(deliveryCode, encryptionSecret),
+        status: EscrowStatus.LOCKED
+      });
+      await escrow.save();
+
+      const response = await request(app)
+        .post('/api/escrow/ESC-TEST-002B/confirm-delivery')
+        .send({
+          deliveryCode,
+          confirmedBy: sellerUserId,
+          autoRelease: false
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe(EscrowStatus.PENDING_CONFIRMATION); // Not auto-released
+      
+      // Verify encrypted code was cleared
+      const updatedEscrow = await Escrow.findOne({ escrowId: 'ESC-TEST-002B' });
       expect(updatedEscrow?.deliveryCodeEncrypted).toBeUndefined();
     });
 

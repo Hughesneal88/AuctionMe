@@ -86,7 +86,8 @@ describe('Payment and Escrow Flow E2E', () => {
     const confirmedEscrow = await escrowService.confirmDelivery(
       escrow!.escrowId,
       deliveryCode,
-      'SELLER-001'
+      'SELLER-001',
+      false // Don't auto-release for this test
     );
 
     expect(confirmedEscrow.status).toBe(EscrowStatus.PENDING_CONFIRMATION);
@@ -230,12 +231,69 @@ describe('Payment and Escrow Flow E2E', () => {
       await escrow.save();
     }
 
-    await escrowService.confirmDelivery(escrow!.escrowId, deliveryCode, 'SELLER-005');
-    await escrowService.releaseFunds(escrow!.escrowId);
+    // Confirm delivery with auto-release (default)
+    const confirmedEscrow = await escrowService.confirmDelivery(escrow!.escrowId, deliveryCode, 'SELLER-005');
+    expect(confirmedEscrow.status).toBe(EscrowStatus.RELEASED);
 
-    // Try to release again
+    // Try to release again (should fail since already released)
     await expect(
       escrowService.releaseFunds(escrow!.escrowId)
     ).rejects.toThrow('Delivery must be confirmed before releasing funds');
+  });
+
+  it('should support auto-release on delivery confirmation', async () => {
+    // Create and complete transaction
+    const transaction = await transactionService.createTransaction(
+      'AUCTION-006',
+      'BUYER-006',
+      'SELLER-006',
+      350,
+      'USD',
+      PaymentMethod.MOBILE_MONEY
+    );
+
+    await transactionService.handlePaymentCallback(
+      transaction.transactionId,
+      'completed',
+      'PROVIDER-REF-XYZ'
+    );
+
+    const escrow = await escrowService.getEscrowByTransaction(transaction.transactionId);
+    expect(escrow).toBeDefined();
+
+    // Setup delivery code
+    const deliveryCode = '789012';
+    const crypto = require('crypto');
+    const hashedCode = crypto.createHash('sha256').update(deliveryCode).digest('hex');
+    
+    const encryptionSecret = process.env.DELIVERY_CODE_SECRET || 'default-secret-key-change-in-production';
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionSecret.padEnd(32, '0').substring(0, 32)), iv);
+    let encrypted = cipher.update(deliveryCode, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+    const encryptedCode = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    
+    if (escrow) {
+      escrow.deliveryCode = hashedCode;
+      escrow.deliveryCodeEncrypted = encryptedCode;
+      await escrow.save();
+    }
+
+    // Confirm delivery with auto-release enabled (default)
+    const confirmedEscrow = await escrowService.confirmDelivery(
+      escrow!.escrowId,
+      deliveryCode,
+      'SELLER-006',
+      true
+    );
+
+    // Funds should be automatically released
+    expect(confirmedEscrow.status).toBe(EscrowStatus.RELEASED);
+    expect(confirmedEscrow.releasedAt).toBeDefined();
+
+    // Seller should be able to withdraw immediately
+    const canWithdraw = await escrowService.canWithdraw('SELLER-006', 350);
+    expect(canWithdraw).toBe(true);
   });
 });
