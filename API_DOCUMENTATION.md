@@ -96,11 +96,15 @@ A secure payment and escrow system for campus auctions, ensuring buyer payments 
 
 - `GET /api/escrow/:escrowId/status` - Get escrow status
 - `GET /api/escrow/transaction/:transactionId` - Get escrow by transaction
-- `POST /api/escrow/:escrowId/confirm-delivery` - Confirm delivery with code
-- `POST /api/escrow/:escrowId/release` - Release funds to seller
+- `GET /api/escrow/buyer/:buyerId` - Get buyer's escrows 🔒
+- `GET /api/escrow/:escrowId/delivery-code` - Get delivery code 🔒 (Buyer only)
+- `POST /api/escrow/:escrowId/confirm-delivery` - Confirm delivery with code (auto-releases funds)
+- `POST /api/escrow/:escrowId/release` - Manually release funds to seller
 - `POST /api/escrow/:escrowId/refund` - Process refund
 - `GET /api/escrow/seller/:sellerId/can-withdraw` - Check withdrawal eligibility
 - `GET /api/escrow/seller/:sellerId/balance` - Get available balance
+
+🔒 = Requires authentication
 
 ## Setup
 
@@ -504,13 +508,19 @@ Get current escrow status.
 {
   "success": true,
   "data": {
-    "escrowId": "escrow_id",
-    "status": "HELD",
+    "escrowId": "ESC-123456789",
+    "status": "LOCKED",
     "amount": 1000,
-    "deliveryCode": "ABCD1234"
+    "currency": "USD",
+    "buyerId": "buyer_id",
+    "sellerId": "seller_id",
+    "confirmedAt": null,
+    "releasedAt": null
   }
 }
 ```
+
+> **Note:** The delivery code (hashed and encrypted) is never exposed in API responses for security.
 
 ### Get Escrow by Transaction
 
@@ -518,43 +528,174 @@ Get current escrow status.
 
 Get escrow details by transaction ID.
 
-### Confirm Delivery
-
-**POST** `/api/escrow/:escrowId/confirm-delivery`
-
-Confirm delivery with verification code.
-
-**Request Body:**
+**Response:**
 ```json
 {
-  "deliveryCode": "ABCD1234",
-  "buyerId": "buyer_id"
+  "success": true,
+  "data": {
+    "escrowId": "ESC-123456789",
+    "transactionId": "TXN-987654321",
+    "status": "LOCKED",
+    "amount": 1000
+  }
 }
 ```
+
+### Get Buyer's Escrows (🔒 Authenticated)
+
+**GET** `/api/escrow/buyer/:buyerId`
+
+Get all escrows for a specific buyer.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Authorization:** User must be authenticated and can only access their own escrows.
 
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Delivery confirmed. Funds released to seller.",
+  "data": [
+    {
+      "escrowId": "ESC-123456789",
+      "transactionId": "TXN-987654321",
+      "auctionId": "AUCTION-001",
+      "status": "LOCKED",
+      "amount": 1000,
+      "createdAt": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+### Get Delivery Code (🔒 Authenticated Buyer Only)
+
+**GET** `/api/escrow/:escrowId/delivery-code`
+
+Retrieve the delivery confirmation code for an escrow. Only the buyer can access this.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Authorization:** 
+- User must be authenticated
+- User must be the buyer for the specified escrow
+- Code is only available for escrows in LOCKED status
+
+**Response:**
+```json
+{
+  "success": true,
   "data": {
-    "escrowId": "escrow_id",
-    "status": "RELEASED"
+    "escrowId": "ESC-123456789",
+    "deliveryCode": "123456",
+    "message": "Share this code with the seller to confirm delivery. This code can only be used once."
   }
 }
 ```
+
+**Error Responses:**
+- `401 Unauthorized`: Not authenticated
+- `403 Forbidden`: Not the buyer for this escrow
+- `400 Bad Request`: Code no longer available (already used or escrow not in LOCKED state)
+
+### Confirm Delivery
+
+**POST** `/api/escrow/:escrowId/confirm-delivery`
+
+Confirm delivery with buyer's verification code. By default, automatically releases funds to seller.
+
+**Rate Limiting:** Strict rate limiting applied due to security sensitivity.
+
+**Request Body:**
+```json
+{
+  "deliveryCode": "123456",
+  "confirmedBy": "seller_id",
+  "autoRelease": true
+}
+```
+
+**Parameters:**
+- `deliveryCode` (required): The 6-digit code provided by the buyer
+- `confirmedBy` (required): ID of the person confirming delivery (typically seller)
+- `autoRelease` (optional, default: true): If true, automatically releases funds after confirmation
+
+**Response (Auto-Release Enabled):**
+```json
+{
+  "success": true,
+  "message": "Delivery confirmed and funds released successfully",
+  "data": {
+    "escrowId": "ESC-123456789",
+    "status": "RELEASED",
+    "confirmedAt": "2024-01-15T14:30:00Z",
+    "releasedAt": "2024-01-15T14:30:00Z"
+  }
+}
+```
+
+**Response (Auto-Release Disabled):**
+```json
+{
+  "success": true,
+  "message": "Delivery confirmed successfully",
+  "data": {
+    "escrowId": "ESC-123456789",
+    "status": "PENDING_CONFIRMATION",
+    "confirmedAt": "2024-01-15T14:30:00Z",
+    "releasedAt": null
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid delivery code, escrow not in LOCKED state, or missing required fields
+
+**Security Notes:**
+- Each delivery code can only be used once
+- The encrypted delivery code is automatically cleared after successful confirmation
+- Failed attempts are rate-limited to prevent brute force attacks
 
 ### Release Funds
 
 **POST** `/api/escrow/:escrowId/release`
 
-Release funds to seller after delivery confirmation.
+Manually release funds to seller. Required only if auto-release was disabled during delivery confirmation.
+
+**Request:** No body required
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Funds released successfully",
+  "data": {
+    "escrowId": "ESC-123456789",
+    "status": "RELEASED",
+    "releasedAt": "2024-01-15T14:35:00Z"
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Delivery must be confirmed before releasing funds"
+}
+```
 
 ### Process Refund
 
 **POST** `/api/escrow/:escrowId/refund`
 
-Process refund to buyer.
+Process refund to buyer (admin/internal use).
 
 **Request Body:**
 ```json
@@ -563,11 +704,24 @@ Process refund to buyer.
 }
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Refund processed successfully",
+  "data": {
+    "escrowId": "ESC-123456789",
+    "status": "REFUNDED",
+    "refundedAt": "2024-01-15T15:00:00Z"
+  }
+}
+```
+
 ### Check Withdrawal Eligibility
 
 **GET** `/api/escrow/seller/:sellerId/can-withdraw`
 
-Check if seller can withdraw funds.
+Check if seller can withdraw funds (no locked or pending escrows).
 
 **Response:**
 ```json
@@ -575,8 +729,7 @@ Check if seller can withdraw funds.
   "success": true,
   "data": {
     "canWithdraw": true,
-    "availableBalance": 5000,
-    "pendingDeliveries": 0
+    "message": "Withdrawal allowed"
   }
 }
 ```
@@ -585,7 +738,73 @@ Check if seller can withdraw funds.
 
 **GET** `/api/escrow/seller/:sellerId/balance`
 
-Get seller's available balance.
+Get seller's available balance (released funds).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "sellerId": "seller_id",
+    "availableBalance": 5000
+  }
+}
+```
+
+---
+
+## Delivery Confirmation Code System
+
+### Overview
+
+The delivery confirmation code system ensures secure transactions between buyers and sellers:
+
+1. **Code Generation**: When payment completes, a unique 6-digit code is generated
+2. **Secure Storage**: Code is hashed (SHA256) for verification and encrypted (AES-256-GCM) for buyer retrieval
+3. **Buyer Notification**: Code is sent to buyer via notification system (SMS/Email in production)
+4. **Buyer Access**: Buyer can retrieve code via authenticated API endpoint
+5. **Delivery Confirmation**: Seller requests code from buyer to confirm delivery
+6. **Automatic Release**: Funds automatically released to seller upon successful confirmation
+7. **One-Time Use**: Code is cleared after first successful use
+
+### Security Features
+
+- **Cryptographically Secure**: Uses Node.js crypto module for code generation
+- **Hashed Storage**: SHA256 hashing with timing-safe comparison
+- **Encrypted Retrieval**: AES-256-GCM encryption for buyer code access
+- **Authentication Required**: Buyer endpoints require JWT authentication
+- **Authorization Checks**: Users can only access their own codes
+- **Rate Limiting**: Strict rate limiting on confirmation endpoint
+- **One-Time Use**: Encrypted code automatically cleared after confirmation
+
+### Status Flow
+
+```
+Payment Completed
+    ↓
+Escrow Created (LOCKED)
+    ↓
+Seller Gets Code from Buyer
+    ↓
+Seller Confirms Delivery
+    ↓
+Escrow Released (RELEASED) ← Automatic by default
+```
+
+Alternative flow without auto-release:
+```
+Payment Completed
+    ↓
+Escrow Created (LOCKED)
+    ↓
+Seller Confirms Delivery
+    ↓
+Pending Confirmation (PENDING_CONFIRMATION)
+    ↓
+Manual Release Triggered
+    ↓
+Escrow Released (RELEASED)
+```
 
 ---
 
