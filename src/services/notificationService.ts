@@ -62,6 +62,28 @@ export class NotificationService {
   }
 
   /**
+   * Send delivery code notification to buyer
+   * In production, this should send via SMS/Email
+   */
+  async notifyDeliveryCode(
+    userId: string, 
+    auctionId: string, 
+    escrowId: string, 
+    deliveryCode: string
+  ): Promise<Notification> {
+    const message = `Your delivery code for auction ${auctionId} is: ${deliveryCode}. Share this code with the seller to confirm delivery. Keep it safe - it can only be used once.`;
+    
+    // In production, send this via SMS/Email instead of just storing
+    // For now, we'll create an in-app notification
+    console.log(`🔔 DELIVERY CODE NOTIFICATION for user ${userId}:`);
+    console.log(`   Escrow: ${escrowId}`);
+    console.log(`   Code: ${deliveryCode}`);
+    console.log(`   ⚠️ In production, send via SMS/Email`);
+    
+    return this.createNotification(userId, NotificationType.DELIVERY_CODE, message, auctionId);
+  }
+
+  /**
    * Create a notification
    */
   private createNotification(

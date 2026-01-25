@@ -3,6 +3,7 @@ import { TransactionStatus, TransactionType, PaymentMethod } from '../types';
 import { generateTransactionId } from '../utils/helpers';
 import paymentService from './paymentService';
 import escrowService from './escrowService';
+import { notificationService } from './notificationService';
 
 /**
  * Service for managing transactions
@@ -135,11 +136,21 @@ class TransactionService {
           transaction.currency
         );
 
-        // TODO: Send delivery code to buyer via SMS/Email using notification service
-        // For now, log it for development purposes only
+        // Send delivery code to buyer via notification service
+        try {
+          await notificationService.notifyDeliveryCode(
+            transaction.buyerId,
+            transaction.auctionId,
+            escrow.escrowId,
+            deliveryCode
+          );
+        } catch (notificationError) {
+          console.error('Failed to send delivery code notification:', notificationError);
+          // Don't fail the transaction if notification fails
+        }
+
         console.log(`Payment completed for transaction: ${transactionId}`);
-        console.log(`DELIVERY CODE for buyer ${transaction.buyerId}: ${deliveryCode} (Escrow: ${escrow.escrowId})`);
-        console.log('⚠️ In production, this should be sent via SMS/Email, NOT logged');
+        console.log(`Escrow created: ${escrow.escrowId}`);
       } else if (status === 'failed') {
         transaction.status = TransactionStatus.FAILED;
         if (metadata) {
